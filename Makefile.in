@@ -1,0 +1,29 @@
+CC=@CC@
+CFLAGS=@CFLAGS@
+LIBS=@LIBS@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+INSTALL = @INSTALL@
+
+MULTITIME_OBJS = multitime.o
+
+multitime: ${MULTITIME_OBJS}
+	${CC} -o multitime ${LIBS} ${MULTITIME_OBJS}
+
+
+clean:
+	rm -f multitime extsmaild ${MULTITIME_OBJS}
+
+
+distclean: clean
+	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
+	  config.status
+
+
+distrib:
+	${MAKE} distclean
+	${MAKE} -f Makefile.bootstrap
+	@read v?'multitime version: '; mkdir multitime-$$v; \
+      cp `ls | grep -E -v "(autom4te.cache)|(configure.in)|(Makefile.bootstrap)|(multitime-$$v)"` multitime-$$v; \
+      tar cfz multitime-$$v.tar.gz multitime-$$v; rm -rf multitime-$$v
