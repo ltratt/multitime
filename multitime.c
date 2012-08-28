@@ -40,18 +40,39 @@
 
 
 
+#define BUFFER_SIZE (64 * 1024)
+
+
 extern char* __progname;
 
 void usage(int, char *);
 void run_cmd(Conf *, int, int);
+void read_input(Conf *, char **, size_t *);
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Running commands
+//
 
 
 void run_cmd(Conf *conf, int cmd_num, int cmd_i)
 {
+    char *input;
+    size_t inputsz;
+    read_input(conf, &input, &inputsz);
     int stdinp[2];
-    if (pipe(stdinp) == -1)
-        goto err;
+    if (input) {
+        if (pipe(stdinp) == -1)
+            goto err;
+    }
+
+    FILE *cmd_stdinf = NULL;
+    if (input) {
+        cmd_stdinf = fdopen(stdinp[1], "w");
+        setvbuf(cmd_stdinf, input, _IOFBF, inputsz + 1);
+        fwrite(input, inputsz, 1, cmd_stdinf);
+    }
 
     struct rusage *ru = conf->rusages[cmd_num][cmd_i] =
       malloc(sizeof(struct rusage));
@@ -64,15 +85,21 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     pid_t pid = fork();
     if (pid == 0) {
         // Child
-        if (dup2(stdinp[0], STDIN_FILENO) == -1)
-            goto err;
-        close(stdinp[1]);
+        if (input) {
+            if (dup2(stdinp[0], STDIN_FILENO) == -1)
+                goto err;
+            close(stdinp[1]);
+        }
         execvp(conf->cmds[cmd_num][0], conf->cmds[cmd_num]);
         goto err;
     }
 
     // Parent
     
+    if (input) {
+        fflush(cmd_stdinf);
+        fclose(cmd_stdinf);
+    }
     int status;
     wait4(pid, &status, 0, ru);
     struct timeval endt;
@@ -82,10 +109,50 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
       malloc(sizeof(struct timeval));
     timersub(&endt, &startt, tv);
 
+    if (input)
+        free(input);
+
     return;
 
 err:
     err(1, "Error when attempting to run %s.\n", conf->cmds[cmd_num][0]);
+}
+
+
+
+void read_input(Conf *conf, char **input, size_t *input_size)
+{
+    if (!conf->input_cmd) {
+        *input = NULL;
+        return;
+    }
+
+    FILE *cmdf = popen(conf->input_cmd, "r");
+    size_t bufsz = BUFFER_SIZE;
+    off_t bufoff = 0;
+    char *buf = malloc(bufsz);
+    while (1) {
+        if (bufoff == bufsz) {
+            bufsz += BUFFER_SIZE;
+            if (!(buf = realloc(buf, bufsz)))
+                goto err;
+        }
+        size_t rsz = bufsz - bufoff;
+        size_t r = fread(buf + bufoff, 1, rsz, cmdf);
+        if (r < rsz && ferror(cmdf))
+            goto err;
+        bufoff += r;
+        if (feof(cmdf))
+            break;
+    }
+    pclose(cmdf);
+    
+    *input = buf;
+    *input_size = bufoff;
+    return;
+
+err:
+    err(1, "Error when attempting to run %s.\n", conf->input_cmd);
 }
 
 
@@ -98,8 +165,8 @@ void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] <num runs> <command> "
-      "[<arg 1> ... <arg n>]\n", __progname);
+    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-i <stdin command>] "
+      "<num runs> <command> [<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
 
@@ -108,9 +175,10 @@ int main(int argc, char** argv)
 {
     Conf *conf = malloc(sizeof(Conf));
     conf->format_style = FORMAT_NORMAL;
+    conf->input_cmd = NULL;
 
     int ch;
-    while ((ch = getopt(argc, argv, "f:h")) != -1) {
+    while ((ch = getopt(argc, argv, "f:hi:")) != -1) {
         switch (ch) {
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
@@ -122,8 +190,13 @@ int main(int argc, char** argv)
                 break;
             case 'h':
                 usage(0, NULL);
+                break;
+            case 'i':
+                conf->input_cmd = optarg;
+                break;
             default:
                 usage(1, NULL);
+                break;
         }
     }
     argc -= optind;
