@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-enum Format_Style {FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_MAXIMAL};
+enum Format_Style {FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAGE};
 
 typedef struct {
     enum Format_Style format_style;

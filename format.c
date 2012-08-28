@@ -224,7 +224,7 @@ void format_other(Conf *conf)
         return;
 
     //
-    // Maximal output.
+    // rusage output.
     //
 
 #define RUSAGE_STAT(n) \

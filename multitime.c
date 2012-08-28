@@ -98,7 +98,7 @@ void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage: %s [-f <liketime|maximal>] <num runs> <command> "
+    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] <num runs> <command> "
       "[<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
@@ -115,8 +115,8 @@ int main(int argc, char** argv)
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
                     conf->format_style = FORMAT_LIKE_TIME;
-                else if (strcmp(optarg, "maximal") == 0)
-                    conf->format_style = FORMAT_MAXIMAL;
+                else if (strcmp(optarg, "rusage") == 0)
+                    conf->format_style = FORMAT_RUSAGE;
                 else
                     usage(1, "Unknown format style.");
                 break;
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
             format_like_time(conf);
             break;
         case FORMAT_NORMAL:
-        case FORMAT_MAXIMAL:
+        case FORMAT_RUSAGE:
             format_other(conf);
             break;
     }
