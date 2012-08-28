@@ -6,4 +6,4 @@ config.log
 config.status
 configure
 multitime
-multitime.o
+*.o

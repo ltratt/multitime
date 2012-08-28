@@ -6,7 +6,7 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 INSTALL = @INSTALL@
 
-MULTITIME_OBJS = multitime.o
+MULTITIME_OBJS = format.o multitime.o
 
 multitime: ${MULTITIME_OBJS}
 	${CC} -o multitime ${LIBS} ${MULTITIME_OBJS}
