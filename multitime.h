@@ -23,10 +23,10 @@ enum Format_Style {FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAGE};
 
 typedef struct {
     enum Format_Style format_style;
-    unsigned int num_cmds;      // How many commands the user has specified.
+    int num_cmds;      // How many commands the user has specified.
     char ***cmds;               // The pre-processed execvp'able arguments for
                                 // each command.
     struct timeval ***timevals; // The wall clock time for each command run.
     struct rusage ***rusages;   // The rusage each command run.
-    unsigned int num_runs;      // How many times to run each command.
+    int num_runs;      // How many times to run each command.
 } Conf;

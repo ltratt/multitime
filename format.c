@@ -43,7 +43,7 @@ void format_like_time(Conf *conf)
     timerclear(&real);
     timerclear(&user);
     timerclear(&sys);
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) {
+    for (int i = 0; i < conf->num_runs; i += 1) {
         timeradd(&real, conf->timevals[0][i],           &real);
         timeradd(&user, &conf->rusages[0][i]->ru_utime, &user);
         timeradd(&sys,  &conf->rusages[0][i]->ru_stime, &sys);
@@ -130,7 +130,7 @@ void format_other(Conf *conf)
     timerclear(&mean_real_tv);
     timerclear(&mean_user_tv);
     timerclear(&mean_sys_tv);
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) {
+    for (int i = 0; i < conf->num_runs; i += 1) {
         timeradd(&mean_real_tv, conf->timevals[0][i],           &mean_real_tv);
         timeradd(&mean_user_tv, &conf->rusages[0][i]->ru_utime, &mean_user_tv);
         timeradd(&mean_sys_tv,  &conf->rusages[0][i]->ru_stime, &mean_sys_tv);
@@ -145,7 +145,7 @@ void format_other(Conf *conf)
     // Standard deviations
 
     double real_stddev = 0, user_stddev = 0, sys_stddev = 0;
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) {
+    for (int i = 0; i < conf->num_runs; i += 1) {
         real_stddev   +=
           pow(TIMEVAL_TO_DOUBLE(conf->timevals[0][i]) - mean_real, 2);
         user_stddev   +=
@@ -156,7 +156,7 @@ void format_other(Conf *conf)
 
     // Mins and maxes
 
-    unsigned int mdl, mdr;
+    int mdl, mdr;
     if (conf->num_runs % 2 == 0) {
         mdl = conf->num_runs / 2 - 1; // Median left
         mdr = conf->num_runs / 2;     // Median right
@@ -229,11 +229,11 @@ void format_other(Conf *conf)
 
 #define RUSAGE_STAT(n) \
     long sum_##n = 0; \
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) \
+    for (int i = 0; i < conf->num_runs; i += 1) \
         sum_##n += conf->rusages[0][i]->ru_##n; \
     long mean_##n = (double) sum_##n / conf->num_runs; \
     double stddev_##n = 0; \
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) \
+    for (int i = 0; i < conf->num_runs; i += 1) \
         stddev_##n += pow(conf->rusages[0][i]->ru_##n - mean_##n, 2); \
     long min_##n, max_##n, md_##n; \
     qsort(conf->rusages[0], conf->num_runs, \
@@ -245,7 +245,7 @@ void format_other(Conf *conf)
     else \
         md_##n = conf->rusages[0][mdl]->ru_##n; \
     fprintf(stderr, #n); \
-    for (unsigned int i = 0; i < 12 - strlen(#n); i += 1) \
+    for (int i = 0; i < 12 - strlen(#n); i += 1) \
         fprintf(stderr, " "); \
     fprintf(stderr, "%-11ld%-11ld%-11ld%-11ld%-11ld\n", \
       min_##n, \

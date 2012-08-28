@@ -43,11 +43,11 @@
 extern char* __progname;
 
 void usage(int, char *);
-void run_cmd(Conf *, unsigned int, unsigned int);
+void run_cmd(Conf *, int, int);
 
 
 
-void run_cmd(Conf *conf, unsigned int cmd_num, unsigned int cmd_i)
+void run_cmd(Conf *conf, int cmd_num, int cmd_i)
 {
     int stdinp[2];
     if (pipe(stdinp) == -1)
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
       || lval <= 0 || lval >= UINT_MAX)
         usage(1, "'num runs' out of range.");
-    conf->num_runs = (unsigned int) lval;
+    conf->num_runs = (int) lval;
     argc -= 1;
     argv += 1;
 
@@ -161,14 +161,14 @@ int main(int argc, char** argv)
     conf->cmds[0] = argv;
     conf->rusages = malloc(sizeof(struct rusage **) * conf->num_cmds);
     conf->timevals = malloc(sizeof(struct timeval **) * conf->num_cmds);
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) {
+    for (int i = 0; i < conf->num_runs; i += 1) {
         conf->rusages[i] = malloc(sizeof(struct rusage *) * conf->num_runs);
         memset(conf->rusages[i], 0, sizeof(struct rusage *) * conf->num_cmds);
         conf->timevals[i] = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(conf->timevals[i], 0, sizeof(struct timeval *) * conf->num_cmds);
     }
     
-    for (unsigned int i = 0; i < conf->num_runs; i += 1) {
+    for (int i = 0; i < conf->num_runs; i += 1) {
         run_cmd(conf, 0, i);
     }
     
