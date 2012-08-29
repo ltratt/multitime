@@ -47,7 +47,7 @@ extern char* __progname;
 
 void usage(int, char *);
 void run_cmd(Conf *, int, int);
-void read_input(Conf *, char **, size_t *);
+FILE *read_input(Conf *);
 
 
 
@@ -55,24 +55,13 @@ void read_input(Conf *, char **, size_t *);
 // Running commands
 //
 
+#include <fcntl.h>
 
 void run_cmd(Conf *conf, int cmd_num, int cmd_i)
 {
-    char *input;
-    size_t inputsz;
-    read_input(conf, &input, &inputsz);
-    int stdinp[2];
-    if (input) {
-        if (pipe(stdinp) == -1)
-            goto err;
-    }
-
-    FILE *cmd_stdinf = NULL;
-    if (input) {
-        cmd_stdinf = fdopen(stdinp[1], "w");
-        setvbuf(cmd_stdinf, input, _IOFBF, inputsz + 1);
-        fwrite(input, inputsz, 1, cmd_stdinf);
-    }
+    FILE *tmpf = NULL;
+    if (conf->input_cmd)
+        tmpf = read_input(conf);
 
     struct rusage *ru = conf->rusages[cmd_num][cmd_i] =
       malloc(sizeof(struct rusage));
@@ -85,10 +74,9 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     pid_t pid = fork();
     if (pid == 0) {
         // Child
-        if (input) {
-            if (dup2(stdinp[0], STDIN_FILENO) == -1)
+        if (conf->input_cmd) {
+            if (dup2(fileno(tmpf), STDIN_FILENO) == -1)
                 goto err;
-            close(stdinp[1]);
         }
         execvp(conf->cmds[cmd_num][0], conf->cmds[cmd_num]);
         goto err;
@@ -96,21 +84,17 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
 
     // Parent
     
-    if (input) {
-        fflush(cmd_stdinf);
-        fclose(cmd_stdinf);
-    }
     int status;
     wait4(pid, &status, 0, ru);
     struct timeval endt;
     gettimeofday(&endt, NULL);
 
+    if (conf->input_cmd)
+        fclose(tmpf);
+
     struct timeval *tv = conf->timevals[cmd_num][cmd_i] =
       malloc(sizeof(struct timeval));
     timersub(&endt, &startt, tv);
-
-    if (input)
-        free(input);
 
     return;
 
@@ -120,38 +104,32 @@ err:
 
 
 
-void read_input(Conf *conf, char **input, size_t *input_size)
+FILE *read_input(Conf *conf)
 {
-    if (!conf->input_cmd) {
-        *input = NULL;
-        return;
-    }
+    assert(conf->input_cmd);
 
     FILE *cmdf = popen(conf->input_cmd, "r");
-    size_t bufsz = BUFFER_SIZE;
-    off_t bufoff = 0;
-    char *buf = malloc(bufsz);
+    FILE *tmpf = tmpfile();
+    if (!cmdf || !tmpf)
+        goto cmd_err;
+    
+    char *buf = malloc(BUFFER_SIZE);
     while (1) {
-        if (bufoff == bufsz) {
-            bufsz += BUFFER_SIZE;
-            if (!(buf = realloc(buf, bufsz)))
-                goto err;
-        }
-        size_t rsz = bufsz - bufoff;
-        size_t r = fread(buf + bufoff, 1, rsz, cmdf);
-        if (r < rsz && ferror(cmdf))
-            goto err;
-        bufoff += r;
+        size_t r = fread(buf, 1, BUFFER_SIZE, cmdf);
+        if (r < BUFFER_SIZE && ferror(cmdf))
+            goto cmd_err;
+        size_t w = fwrite(buf, 1, BUFFER_SIZE, tmpf);
+        if (w < r && ferror(tmpf))
+            goto cmd_err;
         if (feof(cmdf))
             break;
     }
     pclose(cmdf);
+    fseek(tmpf, 0, SEEK_SET);
     
-    *input = buf;
-    *input_size = bufoff;
-    return;
+    return tmpf;
 
-err:
+cmd_err:
     err(1, "Error when attempting to run %s.\n", conf->input_cmd);
 }
 
