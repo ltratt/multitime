@@ -123,7 +123,7 @@ void format_other(Conf *conf)
 {
     for (int i = 0; i < conf->num_cmds; i += 1) {
         fprintf(stderr,
-          "            Min        Max        Mean       Std.Dev.   Median\n");
+          "            Mean        Std.Dev.    Min         Median      Max\n");
 
         struct timeval **timevals = conf->timevals[i];
         struct rusage **rusages = conf->rusages[i];
@@ -210,15 +210,24 @@ void format_other(Conf *conf)
 
         // Print everything out
 
-	    fprintf(stderr, "real        %-11.3f%-11.3f%-11.3f%-11.3f%-11.3f\n",
-          min_real, max_real, mean_real,
-          sqrt(real_stddev / conf->num_runs), md_real);
-	    fprintf(stderr, "user        %-11.3f%-11.3f%-11.3f%-11.3f%-11.3f\n",
-          min_user, max_user, mean_user,
-          sqrt(user_stddev / conf->num_runs), md_user);
-	    fprintf(stderr, "sys         %-11.3f%-11.3f%-11.3f%-11.3f%-11.3f\n",
-          min_sys, max_sys, mean_sys,
-          sqrt(sys_stddev / conf->num_runs), md_sys);
+	    fprintf(stderr, "real        %-12.3f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+          mean_real,
+          sqrt(real_stddev / conf->num_runs),
+          min_real,
+          md_real,
+          max_real);
+	    fprintf(stderr, "user        %-12.3f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+          mean_user,
+          sqrt(user_stddev / conf->num_runs),
+          min_user,
+          md_user,
+          max_user);
+	    fprintf(stderr, "sys         %-12.3f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+          mean_sys,
+          sqrt(sys_stddev / conf->num_runs),
+          min_sys,
+          md_sys,
+          max_sys);
 
         if (conf->format_style == FORMAT_NORMAL)
             return;
@@ -247,12 +256,12 @@ void format_other(Conf *conf)
           fprintf(stderr, #n); \
           for (int j = 0; j < 12 - strlen(#n); j += 1) \
               fprintf(stderr, " "); \
-          fprintf(stderr, "%-11ld%-11ld%-11ld%-11ld%-11ld\n", \
-            min_##n, \
-            max_##n, \
+          fprintf(stderr, "%-12ld%-12ld%-12ld%-12ld%-12ld\n", \
             mean_##n, \
             (long) sqrt(stddev_##n / conf->num_runs), \
-            md_##n);
+            min_##n, \
+            md_##n, \
+            max_##n);
 
         RUSAGE_STAT(maxrss)
         RUSAGE_STAT(minflt)
