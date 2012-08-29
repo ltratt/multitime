@@ -25,6 +25,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -76,10 +77,14 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
         // Child
         if (conf->input_cmd) {
             if (dup2(fileno(tmpf), STDIN_FILENO) == -1)
-                goto err;
+                goto cmd_err;
+        }
+        if (conf->quiet) {
+            if (freopen("/dev/null", "w", stdout) == NULL)
+                goto cmd_err;
         }
         execvp(conf->cmds[cmd_num][0], conf->cmds[cmd_num]);
-        goto err;
+        goto cmd_err;
     }
 
     // Parent
@@ -98,7 +103,7 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
 
     return;
 
-err:
+cmd_err:
     err(1, "Error when attempting to run %s.\n", conf->cmds[cmd_num][0]);
 }
 
@@ -143,7 +148,7 @@ void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-i <stdin command>] "
+    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-i <stdin command>] [-q]"
       "<num runs> <command> [<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
@@ -154,9 +159,10 @@ int main(int argc, char** argv)
     Conf *conf = malloc(sizeof(Conf));
     conf->format_style = FORMAT_NORMAL;
     conf->input_cmd = NULL;
+    conf->quiet = false;
 
     int ch;
-    while ((ch = getopt(argc, argv, "f:hi:")) != -1) {
+    while ((ch = getopt(argc, argv, "f:hi:q")) != -1) {
         switch (ch) {
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
@@ -171,6 +177,9 @@ int main(int argc, char** argv)
                 break;
             case 'i':
                 conf->input_cmd = optarg;
+                break;
+            case 'q':
+                conf->quiet = true;
                 break;
             default:
                 usage(1, NULL);
