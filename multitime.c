@@ -75,14 +75,10 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     pid_t pid = fork();
     if (pid == 0) {
         // Child
-        if (conf->input_cmd) {
-            if (dup2(fileno(tmpf), STDIN_FILENO) == -1)
-                goto cmd_err;
-        }
-        if (conf->quiet) {
-            if (freopen("/dev/null", "w", stdout) == NULL)
-                goto cmd_err;
-        }
+        if (conf->input_cmd && dup2(fileno(tmpf), STDIN_FILENO) == -1)
+            goto cmd_err;
+        if (conf->quiet && freopen("/dev/null", "w", stdout) == NULL)
+            goto cmd_err;
         execvp(conf->cmds[cmd_num][0], conf->cmds[cmd_num]);
         goto cmd_err;
     }
