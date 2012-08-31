@@ -19,6 +19,8 @@
 // IN THE SOFTWARE.
 
 
+#include "Config.h"
+
 #include <assert.h>
 #include <err.h>
 #include <errno.h>
@@ -203,7 +205,7 @@ void usage(int rtn_code, char *msg)
     if (msg)
         fprintf(stderr, "%s\n", msg);
     fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-I <replace str>] "
-      "[-i <stdin command>] [-q] <num runs> <command> "
+      "[-i <stdin command>] [-q] [-s <sleep seconds>] <num runs> <command> "
       "<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
@@ -216,9 +218,10 @@ int main(int argc, char** argv)
     conf->input_cmd = NULL;
     conf->quiet = false;
     conf->replace_str = NULL;
+    conf->sleep = 3;
 
     int ch;
-    while ((ch = getopt(argc, argv, "f:hi:I:q")) != -1) {
+    while ((ch = getopt(argc, argv, "f:hi:I:qs:")) != -1) {
         switch (ch) {
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
@@ -240,6 +243,17 @@ int main(int argc, char** argv)
             case 'q':
                 conf->quiet = true;
                 break;
+            case 's': {
+                char *ep = optarg + strlen(optarg);
+                long lval = strtoimax(optarg, &ep, 10);
+                if (optarg[0] == '\0' || *ep != '\0')
+                    usage(1, "'sleep' not a valid number.");
+                if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
+                  || lval < 0)
+                    usage(1, "'sleep' out of range.");
+                conf->sleep = (int) lval;
+                break;
+            }
             default:
                 usage(1, NULL);
                 break;
@@ -286,9 +300,32 @@ int main(int argc, char** argv)
         conf->timevals[i] = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(conf->timevals[i], 0, sizeof(struct timeval *) * conf->num_cmds);
     }
+
+    // Seed the random number generator.
+
+#	if defined(MT_HAVE_RANDOM) && defined(MT_HAVE_SRANDOMDEV)
+	srandomdev();
+#	elif defined(MT_HAVE_RANDOM)
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srandom(tv.tv_sec ^ tv.tv_usec);
+#	else
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_sec ^ tv.tv_usec);
+#	endif
     
     for (int i = 0; i < conf->num_runs; i += 1) {
         run_cmd(conf, 0, i);
+        if (i + 1 < conf->num_runs && conf->sleep > 0) {
+#	        ifdef MT_HAVE_RANDOM
+	        usleep(random() % (conf->sleep * 1000000));
+#	        else
+	        usleep(rand() % (conf->sleep) * 1000000));
+#	        endif
+        }
     }
     
     switch (conf->format_style) {

@@ -24,8 +24,10 @@ enum Format_Style {FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAGE};
 typedef struct {
     enum Format_Style format_style;
     const char *input_cmd;
-    bool quiet;
+    bool quiet;                 // True = suppress command's stdout.
     const char *replace_str;
+    int sleep;                  // Time to sleep between commands, in seconds.
+                                // 0 = no sleep.
     
     int num_cmds;               // How many commands the user has specified.
     char ***cmds;               // The pre-processed execvp'able arguments for

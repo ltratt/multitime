@@ -56,6 +56,23 @@ case `uname -s` in
 esac
 
 
+# random
+
+AH_TEMPLATE(MT_HAVE_RANDOM,
+  [Define if your platform has the random function family.])
+
+AC_CHECK_FUNC(random, [AC_DEFINE(MT_HAVE_RANDOM)])
+
+
+# srandomdev
+
+AH_TEMPLATE(MT_HAVE_SRANDOMDEV,
+  [Define if your platform has the srandomdev function.])
+
+AC_CHECK_FUNC(srandomdev, [AC_DEFINE(MT_HAVE_SRANDOMDEV)])
+
+
+
 ####################################################################################################
 # Output
 #
