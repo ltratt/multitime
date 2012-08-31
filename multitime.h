@@ -25,6 +25,7 @@ typedef struct {
     enum Format_Style format_style;
     const char *input_cmd;
     bool quiet;
+    const char *replace_str;
     
     int num_cmds;               // How many commands the user has specified.
     char ***cmds;               // The pre-processed execvp'able arguments for

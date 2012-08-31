@@ -48,7 +48,8 @@ extern char* __progname;
 
 void usage(int, char *);
 void run_cmd(Conf *, int, int);
-FILE *read_input(Conf *);
+FILE *read_input(Conf *, int);
+char *replace(Conf *, const char *, int);
 
 
 
@@ -62,7 +63,7 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
 {
     FILE *tmpf = NULL;
     if (conf->input_cmd)
-        tmpf = read_input(conf);
+        tmpf = read_input(conf, cmd_i);
 
     struct rusage *ru = conf->rusages[cmd_num][cmd_i] =
       malloc(sizeof(struct rusage));
@@ -105,11 +106,17 @@ cmd_err:
 
 
 
-FILE *read_input(Conf *conf)
+//
+// Read in the input from conf->input_cmd for cmd_i and return an open file set
+// to read from the beginning which contains its output.
+//
+
+FILE *read_input(Conf *conf, int cmd_i)
 {
     assert(conf->input_cmd);
 
-    FILE *cmdf = popen(conf->input_cmd, "r");
+    char *input_cmd = replace(conf, conf->input_cmd, cmd_i);
+    FILE *cmdf = popen(input_cmd, "r");
     FILE *tmpf = tmpfile();
     if (!cmdf || !tmpf)
         goto cmd_err;
@@ -126,12 +133,61 @@ FILE *read_input(Conf *conf)
             break;
     }
     pclose(cmdf);
+    free(input_cmd);
     fseek(tmpf, 0, SEEK_SET);
     
     return tmpf;
 
 cmd_err:
     err(1, "Error when attempting to run %s.\n", conf->input_cmd);
+}
+
+
+
+//
+// Take in string 's' and replace all instances of conf->replace_str with
+// str(cmd_i). Always returns a malloc'd string (even if conf->replace_str is not
+// in s) which must be manually freed.
+//
+
+char *replace(Conf *conf, const char *s, int cmd_i)
+{
+    char *rtn;
+    if (!conf->replace_str) {
+        rtn = malloc(strlen(s) + 1);
+        strcpy(rtn, s);
+    }
+    else {
+        int replacen = 0;
+        const char *f = s;
+        while (true) {
+            f = strstr(f, conf->replace_str);
+            if (f == NULL)
+                break;
+            replacen++;
+            f += strlen(conf->replace_str);
+        }
+        int nch = snprintf(NULL, 0, "%d", cmd_i);
+        char buf1[nch + 1];
+        sprintf(buf1, "%d", cmd_i);
+        rtn = malloc(strlen(s) + replacen * (nch - strlen(conf->replace_str)) + 1);
+        f = s;
+        char *r = rtn;
+        while (true) {
+            char *fn = strstr(f, conf->replace_str);
+            if (fn == NULL) {
+                strcpy(r, f);
+                break;
+            }
+            memmove(r, f, fn - f);
+            r += fn - f;
+            memmove(r, buf1, strlen(buf1));
+            r += strlen(buf1);
+            f = fn + strlen(conf->replace_str);
+        }
+    }
+    
+    return rtn;
 }
 
 
@@ -144,8 +200,9 @@ void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-i <stdin command>] [-q]"
-      "<num runs> <command> [<arg 1> ... <arg n>]\n", __progname);
+    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-I <replace str>] "
+      "[-i <stdin command>] [-q] <num runs> <command> "
+      "<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
 
@@ -156,9 +213,10 @@ int main(int argc, char** argv)
     conf->format_style = FORMAT_NORMAL;
     conf->input_cmd = NULL;
     conf->quiet = false;
+    conf->replace_str = NULL;
 
     int ch;
-    while ((ch = getopt(argc, argv, "f:hi:q")) != -1) {
+    while ((ch = getopt(argc, argv, "f:hi:I:q")) != -1) {
         switch (ch) {
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
@@ -170,6 +228,9 @@ int main(int argc, char** argv)
                 break;
             case 'h':
                 usage(0, NULL);
+                break;
+            case 'I':
+                conf->replace_str = optarg;
                 break;
             case 'i':
                 conf->input_cmd = optarg;
