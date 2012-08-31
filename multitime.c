@@ -87,7 +87,7 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     pid_t pid = fork();
     if (pid == 0) {
         // Child
-        if (conf->input_cmd && dup2(fileno(tmpf), STDIN_FILENO) == -1)
+        if (tmpf && dup2(fileno(tmpf), STDIN_FILENO) == -1)
             goto cmd_err;
 
         if (conf->quiet && freopen("/dev/null", "w", stdout) == NULL)
@@ -176,11 +176,15 @@ bool fcopy(FILE *rf, FILE *wf)
     char *buf = malloc(BUFFER_SIZE);
     while (1) {
         size_t r = fread(buf, 1, BUFFER_SIZE, rf);
-        if (r < BUFFER_SIZE && ferror(rf))
+        if (r < BUFFER_SIZE && ferror(rf)) {
+            free(buf);
             return false;
+        }
         size_t w = fwrite(buf, 1, r, wf);
-        if (w < r && ferror(wf))
+        if (w < r && ferror(wf)) {
+            free(buf);
             return false;
+        }
         if (feof(rf))
             break;
     }
