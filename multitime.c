@@ -253,8 +253,8 @@ void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-I <replace str>] "
-      "[-i <stdin cmd>] [-o <stdout cmd>] [-q] [-s <sleep seconds>] <num runs> <cmd> "
+    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-I <replstr>] "
+      "[-i <stdincmd>] [-o <stdoutcmd>] [-q] [-s <sleep seconds>] <numruns> <command> "
       "[<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
