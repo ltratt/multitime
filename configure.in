@@ -30,8 +30,7 @@ AC_CONFIG_HEADER(Config.h)
 AC_LANG(C)
 
 AC_PROG_CC
-AC_ISC_POSIX
-AC_PROG_GCC_TRADITIONAL
+AC_PROG_CC_C99
 AC_GNU_SOURCE
 
 
@@ -39,19 +38,28 @@ AC_GNU_SOURCE
 # Function / feature checks
 #
 
-CFLAGS="-std=c99 -O2 -Wall"
+real_cflags="$CFLAGS -Wall"
 LIBS="-lm"
 
 
 # fileno (Linux)
 
 case `uname -s` in
-  Linux* ) CFLAGS="$CFLAGS -D_POSIX_C_SOURCE=2";;
+  Linux* ) real_cflags="$real_cflags -D_POSIX_C_SOURCE=2";;
 esac
+
+
+# timerclear and friends
+
+case `uname -s` in
+  Linux* ) real_cflags="$real_cflags -D_BSD_SOURCE";;
+esac
+
 
 ####################################################################################################
 # Output
 #
 
+CFLAGS=$real_cflags
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
