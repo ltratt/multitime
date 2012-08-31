@@ -124,7 +124,7 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
         int cmdr = pclose(cmdf);
         if (cmdr != 0)
             errx(1, "Exiting because '%s' failed.", output_cmd);
-        fclose(tmpf);
+        fclose(outtmpf);
         free(output_cmd);
     }
 
