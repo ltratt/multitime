@@ -1,0 +1,190 @@
+.\" Copyright (C)2012 Laurence Tratt http://tratt.net/laurie/
+.\"
+.\" Permission is hereby granted, free of charge, to any person obtaining a copy
+.\" of this software and associated documentation files (the "Software"), to
+.\" deal in the Software without restriction, including without limitation the
+.\" rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+.\" sell copies of the Software, and to permit persons to whom the Software is
+.\" furnished to do so, subject to the following conditions:
+.\"
+.\" The above copyright notice and this permission notice shall be included in
+.\" all copies or substantial portions of the Software.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+.\" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+.\" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+.\" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+.\" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+.\" FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+.\" IN THE SOFTWARE.
+.Dd $Mdocdate: August 31 2012 $
+.Dt MULTITIME 1
+.Os
+.Sh NAME
+.Nm multitime
+.Nd time command execution over multiple executions
+.Sh SYNOPSIS
+.Nm multitime
+.Op Fl f Ar liketime | rusage
+.Op Fl I Ar replstr
+.Op Fl i Ar stdincmd
+.Op Fl o Ar stdoutcmd
+.Op Fl q
+.Op Fl s Ar sleep
+.Ar numruns
+.Ar command
+.Op Ar options ...
+.Sh DESCRIPTION
+Unix's
+.Xr time 1
+utility is a simple and often effective way of measuring how
+long a command takes to run. Unfortunately, running a command once can give
+misleading timings: the process may create a cache on its first execution,
+running faster subsequently; other processes may cause the command to be
+starved of CPU or IO time; etc. It is common to see people run
+.Xr time 1
+several times and take whichever values they feel most comfortable with.
+Inevitably, this causes problems.
+
+.Nm
+is, in essence, a simple extension to
+.Xr time 1
+which runs a command multiple times and prints the timing means, standard
+deviations, mins, medians, and maxes having done so. This can give a much
+better understanding of the command's performance.
+.Nm
+also has a number of options to help advanced uses. For basic uses,
+.Nm
+can replace
+.Xr time 1
+by simply prepending the command to be run with an integer specifying how
+many runs should be executed. e.g.:
+.Pp
+.Dl $ multitime 5 md5 -t
+.Pp
+The full set of options is as follows:
+.Bl -tag -width Ds
+.It Ic -f Ar liketime | rusage
+The default output style of
+.Nm
+is an incompatible extension of
+.Xr time 1
+that shows means, standard deviations, mins, medians, and maxes. If
+.Ic -f
+.Ar liketime
+is specified,
+.Nm
+formats it output exactly as
+.Xr time 1
+showing only the means for real, user, and sys readings, allowing
+.Nm
+to be used as a drop-in replacement for
+.Xr time 1 .
+.Ic -f
+.Ar rusage
+instead formats the output per the default, but shows the entire output
+of the rusage structure.
+.It Ic -I Ar replstr
+Instances of
+.Ar replstr
+found in
+.Ar inputcmd ,
+.Ar outputcmd
+are replaced with an integer denoting the current execution run number, from
+0 (inclusive) to num runs (exclusive).
+.It Ic -i Ar stdincmd
+Before each execution of
+.Ar command ,
+.Ar stdincmd
+is run and its output piped to a temporary file. That temporary file is then
+used as stdin for
+.Ar command ,
+allowing the user to ensure that each execution of
+.Ar command
+sees exactly the input on stdin expected.
+.Ar stdincmd
+is a full shell command which is passed to
+.Xr popen 3 .
+.It Ic -o Ar stdoutcmd
+When executing
+.Ar command ,
+its output is piped to a temporary file.
+.Ar stdoutcmd
+is then run, with the temporary file being its stdin. If
+.Ar stdoutcmd
+returns an exit code (i.e. non-zero),
+.Nm
+stops executing. This can be used as a sanity check that
+.Ar command
+is executing as per expectations.
+.Ar stdoutcmd
+is a full shell command which is passed to
+.Xr popen 3 .
+.It Ic -q
+Suppresses stdout output from
+.Ar command .
+This can be useful for programs which produce voluminous output, which can
+lead to one unintentionally measuring the output speed of the particular
+terminal being used, rather than
+.Ar command
+itself.
+.It Ic -s Ar sleep
+.Nm
+pauses a random length of time between 0 and
+.Ar sleep
+seconds between each command execution. Particularly for short-running commands,
+this can smooth out temporary peaks and troughs. If not specified,
+.Ar sleep
+defaults to 3 seconds; if set to 0,
+.Nm
+does not sleep at all between executions.
+.El
+.Sh EXAMPLES
+A basic invocation of
+.Nm 
+is as follows:
+.Pp
+.Dl $ multitime -5 md5 -t
+.Pp
+.Ar command
+will produce its output as normal;
+.Nm
+will then produce output such as the following on stderr:
+.Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
+.It       Ta  Mean   Ta  Std.Dev. Ta  Min    Ta  Median  Ta  Max
+.It real  Ta  0.222  Ta  0.000    Ta  0.222  Ta  0.222   Ta  0.222       
+.It user  Ta  0.212  Ta  0.004    Ta  0.210  Ta  0.210   Ta  0.220       
+.It sys   Ta  0.002  Ta  0.004    Ta  0.000  Ta  0.000   Ta  0.010
+.El
+.Pp
+As an example of more complex uses of
+.Nm ,
+one could time the overall performance of
+.Xr sort 1
+on different sequences of random data using
+.Ic -f :
+.Dl $ multitime -i "jot -r 1000000 1 100000" -q 3 sort
+Note that each execution of
+.Xr sort 1
+will receive different output from
+.Xr jot 1 .
+If you want each execution to receive the same data, use a two-stage sequence with
+.Xr cat 1 :
+.Dl $ jot -r 1000000 1 100000 > file
+.Dl $ multitime -i 'cat file' -q 3 sort
+.Pp
+If you are timing
+.Xr sort 1
+against pre-defined batches of data (called data0, data1, ... data29):
+.Dl $ multitime -I{} -i 'cat data{}' -q 30 sort
+.Pp
+If you want to cache the output of each execution of
+.Ar command
+use
+.Ic -o :
+.Dl $ multitime -I{} -o 'cat > file{}' 3 md5 -t
+.Sh AUTHORS
+.An -nosplit
+.Nm
+was written by
+.An Laurence Tratt Aq http://tratt.net/laurie/ .

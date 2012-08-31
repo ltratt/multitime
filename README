@@ -10,7 +10,7 @@ starved of CPU or IO time; etc. It is common to see people run 'time' several
 times and take whichever values they feel most comfortable with. Inevitably,
 this causes problems.
 
-multitime is, in essence, a simple extension to time whch runs a command
-multiple times and prints the timing mins, maxes, means (averages), medians,
-and standard deviations having done so. This can give a much better
-understanding of the command's performance.
+multitime is, in essence, a simple extension to time which runs a command
+multiple times and prints the timing means, standard deviations, mins,
+medians, and maxes having done so. This can give a much better understanding
+of the command's performance.
