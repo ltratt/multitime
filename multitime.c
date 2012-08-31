@@ -155,7 +155,8 @@ char *replace(Conf *conf, const char *s, int cmd_i)
     char *rtn;
     if (!conf->replace_str) {
         rtn = malloc(strlen(s) + 1);
-        strcpy(rtn, s);
+        memmove(rtn, s, strlen(s));
+        rtn[strlen(s)] = 0;
     }
     else {
         int replacen = 0;
@@ -169,14 +170,15 @@ char *replace(Conf *conf, const char *s, int cmd_i)
         }
         int nch = snprintf(NULL, 0, "%d", cmd_i);
         char buf1[nch + 1];
-        sprintf(buf1, "%d", cmd_i);
+        snprintf(buf1, nch + 1, "%d", cmd_i);
         rtn = malloc(strlen(s) + replacen * (nch - strlen(conf->replace_str)) + 1);
         f = s;
         char *r = rtn;
         while (true) {
             char *fn = strstr(f, conf->replace_str);
             if (fn == NULL) {
-                strcpy(r, f);
+                memmove(r, f, strlen(f));
+                r[strlen(f)] = 0;
                 break;
             }
             memmove(r, f, fn - f);
