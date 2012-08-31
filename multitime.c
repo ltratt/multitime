@@ -51,6 +51,7 @@ extern char* __progname;
 void usage(int, char *);
 void run_cmd(Conf *, int, int);
 FILE *read_input(Conf *, int);
+bool fcopy(FILE *, FILE *);
 char *replace(Conf *, const char *, int);
 
 
@@ -67,6 +68,14 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     if (conf->input_cmd)
         tmpf = read_input(conf, cmd_i);
 
+    FILE *outtmpf = NULL;
+    char *output_cmd = replace(conf, conf->output_cmd, cmd_i);
+    if (output_cmd) {
+        outtmpf = tmpfile();
+        if (!outtmpf)
+            goto cmd_err;
+    }
+
     struct rusage *ru = conf->rusages[cmd_num][cmd_i] =
       malloc(sizeof(struct rusage));
 
@@ -80,7 +89,10 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
         // Child
         if (conf->input_cmd && dup2(fileno(tmpf), STDIN_FILENO) == -1)
             goto cmd_err;
+
         if (conf->quiet && freopen("/dev/null", "w", stdout) == NULL)
+            goto cmd_err;
+        else if (output_cmd && dup2(fileno(outtmpf), STDOUT_FILENO) == -1)
             goto cmd_err;
         execvp(conf->cmds[cmd_num][0], conf->cmds[cmd_num]);
         goto cmd_err;
@@ -100,10 +112,29 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
       malloc(sizeof(struct timeval));
     timersub(&endt, &startt, tv);
 
+    // If an output command is specified, pipe the temporary output to it, and
+    // check its return code.
+
+    if (output_cmd) {
+        fflush(outtmpf);
+        fseek(outtmpf, 0, SEEK_SET);
+        FILE *cmdf = popen(output_cmd, "w");
+        if (cmdf == NULL || !fcopy(outtmpf, cmdf))
+            goto output_cmd_err;
+        int cmdr = pclose(cmdf);
+        if (cmdr != 0)
+            errx(1, "Exiting because '%s' failed.", output_cmd);
+        fclose(tmpf);
+        free(output_cmd);
+    }
+
     return;
 
 cmd_err:
-    err(1, "Error when attempting to run %s.\n", conf->cmds[cmd_num][0]);
+    err(1, "Error when attempting to run %s", conf->cmds[cmd_num][0]);
+
+output_cmd_err:
+    err(1, "Error when attempting to run %s", output_cmd);
 }
 
 
@@ -123,17 +154,7 @@ FILE *read_input(Conf *conf, int cmd_i)
     if (!cmdf || !tmpf)
         goto cmd_err;
     
-    char *buf = malloc(BUFFER_SIZE);
-    while (1) {
-        size_t r = fread(buf, 1, BUFFER_SIZE, cmdf);
-        if (r < BUFFER_SIZE && ferror(cmdf))
-            goto cmd_err;
-        size_t w = fwrite(buf, 1, BUFFER_SIZE, tmpf);
-        if (w < r && ferror(tmpf))
-            goto cmd_err;
-        if (feof(cmdf))
-            break;
-    }
+    fcopy(cmdf, tmpf);
     pclose(cmdf);
     free(input_cmd);
     fseek(tmpf, 0, SEEK_SET);
@@ -147,13 +168,41 @@ cmd_err:
 
 
 //
+// Copy all data from rf to wf. Returns true if successful, false if not.
+//
+
+bool fcopy(FILE *rf, FILE *wf)
+{
+    char *buf = malloc(BUFFER_SIZE);
+    while (1) {
+        size_t r = fread(buf, 1, BUFFER_SIZE, rf);
+        if (r < BUFFER_SIZE && ferror(rf))
+            return false;
+        size_t w = fwrite(buf, 1, r, wf);
+        if (w < r && ferror(wf))
+            return false;
+        if (feof(rf))
+            break;
+    }
+    free(buf);
+
+    return true;
+}
+
+
+
+//
 // Take in string 's' and replace all instances of conf->replace_str with
 // str(cmd_i). Always returns a malloc'd string (even if conf->replace_str is not
-// in s) which must be manually freed.
+// in s) which must be manually freed *except* if s is NULL, whereupon NULL is
+// returned.
 //
 
 char *replace(Conf *conf, const char *s, int cmd_i)
 {
+    if (s == NULL)
+        return NULL;
+
     char *rtn;
     if (!conf->replace_str) {
         rtn = malloc(strlen(s) + 1);
@@ -205,8 +254,8 @@ void usage(int rtn_code, char *msg)
     if (msg)
         fprintf(stderr, "%s\n", msg);
     fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-I <replace str>] "
-      "[-i <stdin command>] [-q] [-s <sleep seconds>] <num runs> <command> "
-      "<arg 1> ... <arg n>]\n", __progname);
+      "[-i <stdin cmd>] [-o <stdout cmd>] [-q] [-s <sleep seconds>] <num runs> <cmd> "
+      "[<arg 1> ... <arg n>]\n", __progname);
     exit(rtn_code);
 }
 
@@ -216,12 +265,13 @@ int main(int argc, char** argv)
     Conf *conf = malloc(sizeof(Conf));
     conf->format_style = FORMAT_NORMAL;
     conf->input_cmd = NULL;
+    conf->output_cmd = NULL;
     conf->quiet = false;
     conf->replace_str = NULL;
     conf->sleep = 3;
 
     int ch;
-    while ((ch = getopt(argc, argv, "f:hi:I:qs:")) != -1) {
+    while ((ch = getopt(argc, argv, "f:hi:I:o:qs:")) != -1) {
         switch (ch) {
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
@@ -240,7 +290,14 @@ int main(int argc, char** argv)
             case 'i':
                 conf->input_cmd = optarg;
                 break;
+            case 'o':
+                if (conf->quiet)
+                    usage(1, "Can't specify output command if -q is specified.");
+                conf->output_cmd = optarg;
+                break;
             case 'q':
+                if (conf->output_cmd)
+                    usage(1, "Can't suppress stdout if -o is specified.");
                 conf->quiet = true;
                 break;
             case 's': {
