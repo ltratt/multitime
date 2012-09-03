@@ -35,30 +35,12 @@
   ((double) (t)->tv_sec + (double) (t)->tv_usec / 1000000)
 
 
-void format_like_time(Conf *conf)
-{
-    // Formatting like /usr/bin/time only makes sense if a single command is run.
-    assert(conf->num_cmds == 1);
 
-    struct timeval real, user, sys;
-    timerclear(&real);
-    timerclear(&user);
-    timerclear(&sys);
-    Cmd *cmd = conf->cmds[0];
-    for (int i = 0; i < conf->num_runs; i += 1) {
-        timeradd(&real, cmd->timevals[i],           &real);
-        timeradd(&user, &cmd->rusages[0]->ru_utime, &user);
-        timeradd(&sys,  &cmd->rusages[0]->ru_stime, &sys);
-    }
-	fprintf(stderr, "real %9ld.%02ld\n",
-      real.tv_sec / conf->num_runs, (real.tv_usec / 10000) / conf->num_runs);
-	fprintf(stderr, "user %9ld.%02ld\n",
-      user.tv_sec / conf->num_runs, (user.tv_usec / 10000) / conf->num_runs);
-	fprintf(stderr, "sys  %9ld.%02ld\n",
-      sys.tv_sec / conf->num_runs,  (sys.tv_usec / 10000) / conf->num_runs);
-}
-
-
+////////////////////////////////////////////////////////////////////////////////
+// Comparison commands
+//
+// These are needed for the various calls to quicksort in format_other
+//
 
 int cmp_timeval(const void *x, const void *y)
 {
@@ -120,11 +102,61 @@ RUSAGE_CMP(nvcsw)
 RUSAGE_CMP(nivcsw)
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Format routines
+//
+
+void format_like_time(Conf *conf)
+{
+    // Formatting like /usr/bin/time only makes sense if a single command is run.
+    assert(conf->num_cmds == 1);
+
+    struct timeval real, user, sys;
+    timerclear(&real);
+    timerclear(&user);
+    timerclear(&sys);
+    Cmd *cmd = conf->cmds[0];
+    for (int i = 0; i < conf->num_runs; i += 1) {
+        timeradd(&real, cmd->timevals[i],           &real);
+        timeradd(&user, &cmd->rusages[0]->ru_utime, &user);
+        timeradd(&sys,  &cmd->rusages[0]->ru_stime, &sys);
+    }
+	fprintf(stderr, "real %9ld.%02ld\n",
+      real.tv_sec / conf->num_runs, (real.tv_usec / 10000) / conf->num_runs);
+	fprintf(stderr, "user %9ld.%02ld\n",
+      user.tv_sec / conf->num_runs, (user.tv_usec / 10000) / conf->num_runs);
+	fprintf(stderr, "sys  %9ld.%02ld\n",
+      sys.tv_sec / conf->num_runs,  (sys.tv_usec / 10000) / conf->num_runs);
+}
+
+
 
 void format_other(Conf *conf)
 {
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
+
+        // Pretty-print the commands argv: we try to be semi-sensible about
+        // escaping strings, but it's never going to be perfect, as the rules
+        // are somewhat shell dependent.
+
+        fprintf(stderr, "%d:", i + 1);
+        for (int j = 0; cmd->argv[j] != NULL; j += 1) {
+            char *arg = cmd->argv[j];
+            if (strchr(arg, ' ') == NULL)
+                fprintf(stderr, " %s", cmd->argv[j]);
+            else {
+                fprintf(stderr, " \"");
+                for (int k = 0; k < strlen(arg); k += 1) {
+                    if (arg[k] == '\"')
+                        fprintf(stderr, "\\\"");
+                    else
+                        fprintf(stderr, "%c", arg[k]);
+                }
+                fprintf(stderr, "\"");
+            }
+        }
+        fprintf(stderr, "\n");
         fprintf(stderr,
           "            Mean        Std.Dev.    Min         Median      Max\n");
 
