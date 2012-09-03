@@ -22,18 +22,21 @@
 enum Format_Style {FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAGE};
 
 typedef struct {
-    enum Format_Style format_style;
+    char ** argv;
     const char *input_cmd;
     const char *output_cmd;
-    bool quiet;                 // True = suppress command's stdout.
     const char *replace_str;
+    struct timeval **timevals; // The wall clock time for each command run.
+    struct rusage **rusages;   // The rusage each command run.
+} Cmd;
+
+typedef struct {
+    Cmd **cmds;
+    int num_cmds;               // How many commands the user has specified.
+    int num_runs;               // How many times to run each command.
+
+    enum Format_Style format_style;
     int sleep;                  // Time to sleep between commands, in seconds.
                                 // 0 = no sleep.
-    
-    int num_cmds;               // How many commands the user has specified.
-    char ***cmds;               // The pre-processed execvp'able arguments for
-                                // each command.
-    struct timeval ***timevals; // The wall clock time for each command run.
-    struct rusage ***rusages;   // The rusage each command run.
-    int num_runs;               // How many times to run each command.
+    bool quiet;                 // True = suppress each command's stdout.
 } Conf;

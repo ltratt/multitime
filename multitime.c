@@ -49,10 +49,10 @@
 extern char* __progname;
 
 void usage(int, char *);
-void run_cmd(Conf *, int, int);
-FILE *read_input(Conf *, int);
+void run_cmd(Conf *, Cmd *, int);
+FILE *read_input(Conf *, Cmd *, int);
 bool fcopy(FILE *, FILE *);
-char *replace(Conf *, const char *, int);
+char *replace(Conf *, Cmd *, const char *, int);
 
 
 
@@ -62,21 +62,21 @@ char *replace(Conf *, const char *, int);
 
 #include <fcntl.h>
 
-void run_cmd(Conf *conf, int cmd_num, int cmd_i)
+void run_cmd(Conf *conf, Cmd *cmd, int runi)
 {
     FILE *tmpf = NULL;
-    if (conf->input_cmd)
-        tmpf = read_input(conf, cmd_i);
+    if (cmd->input_cmd)
+        tmpf = read_input(conf, cmd, runi);
 
     FILE *outtmpf = NULL;
-    char *output_cmd = replace(conf, conf->output_cmd, cmd_i);
+    char *output_cmd = replace(conf, cmd, cmd->output_cmd, runi);
     if (output_cmd) {
         outtmpf = tmpfile();
         if (!outtmpf)
             goto cmd_err;
     }
 
-    struct rusage *ru = conf->rusages[cmd_num][cmd_i] =
+    struct rusage *ru = cmd->rusages[runi] =
       malloc(sizeof(struct rusage));
 
     // Note: we want to do as little stuff in either parent or child between the
@@ -94,7 +94,7 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
             goto cmd_err;
         else if (output_cmd && dup2(fileno(outtmpf), STDOUT_FILENO) == -1)
             goto cmd_err;
-        execvp(conf->cmds[cmd_num][0], conf->cmds[cmd_num]);
+        execvp(cmd->argv[0], cmd->argv);
         goto cmd_err;
     }
 
@@ -105,11 +105,10 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     struct timeval endt;
     gettimeofday(&endt, NULL);
 
-    if (conf->input_cmd)
+    if (tmpf)
         fclose(tmpf);
 
-    struct timeval *tv = conf->timevals[cmd_num][cmd_i] =
-      malloc(sizeof(struct timeval));
+    struct timeval *tv = cmd->timevals[runi] = malloc(sizeof(struct timeval));
     timersub(&endt, &startt, tv);
 
     // If an output command is specified, pipe the temporary output to it, and
@@ -131,7 +130,7 @@ void run_cmd(Conf *conf, int cmd_num, int cmd_i)
     return;
 
 cmd_err:
-    err(1, "Error when attempting to run %s", conf->cmds[cmd_num][0]);
+    err(1, "Error when attempting to run %s", cmd->argv[0]);
 
 output_cmd_err:
     err(1, "Error when attempting to run %s", output_cmd);
@@ -140,15 +139,15 @@ output_cmd_err:
 
 
 //
-// Read in the input from conf->input_cmd for cmd_i and return an open file set
+// Read in the input from cmd->input_cmd for runi and return an open file set
 // to read from the beginning which contains its output.
 //
 
-FILE *read_input(Conf *conf, int cmd_i)
+FILE *read_input(Conf *conf, Cmd *cmd, int runi)
 {
-    assert(conf->input_cmd);
+    assert(cmd->input_cmd);
 
-    char *input_cmd = replace(conf, conf->input_cmd, cmd_i);
+    char *input_cmd = replace(conf, cmd, cmd->input_cmd, runi);
     FILE *cmdf = popen(input_cmd, "r");
     FILE *tmpf = tmpfile();
     if (!cmdf || !tmpf)
@@ -162,7 +161,7 @@ FILE *read_input(Conf *conf, int cmd_i)
     return tmpf;
 
 cmd_err:
-    err(1, "Error when attempting to run %s.\n", conf->input_cmd);
+    err(1, "Error when attempting to run %s.\n", cmd->input_cmd);
 }
 
 
@@ -196,19 +195,19 @@ bool fcopy(FILE *rf, FILE *wf)
 
 
 //
-// Take in string 's' and replace all instances of conf->replace_str with
-// str(cmd_i). Always returns a malloc'd string (even if conf->replace_str is not
+// Take in string 's' and replace all instances of cmd->replace_str with
+// str(runi). Always returns a malloc'd string (even if cmd->replace_str is not
 // in s) which must be manually freed *except* if s is NULL, whereupon NULL is
 // returned.
 //
 
-char *replace(Conf *conf, const char *s, int cmd_i)
+char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
 {
     if (s == NULL)
         return NULL;
 
     char *rtn;
-    if (!conf->replace_str) {
+    if (!cmd->replace_str) {
         rtn = malloc(strlen(s) + 1);
         memmove(rtn, s, strlen(s));
         rtn[strlen(s)] = 0;
@@ -217,20 +216,20 @@ char *replace(Conf *conf, const char *s, int cmd_i)
         int replacen = 0;
         const char *f = s;
         while (true) {
-            f = strstr(f, conf->replace_str);
+            f = strstr(f, cmd->replace_str);
             if (f == NULL)
                 break;
             replacen++;
-            f += strlen(conf->replace_str);
+            f += strlen(cmd->replace_str);
         }
-        int nch = snprintf(NULL, 0, "%d", cmd_i);
+        int nch = snprintf(NULL, 0, "%d", runi);
         char buf1[nch + 1];
-        snprintf(buf1, nch + 1, "%d", cmd_i);
-        rtn = malloc(strlen(s) + replacen * (nch - strlen(conf->replace_str)) + 1);
+        snprintf(buf1, nch + 1, "%d", runi);
+        rtn = malloc(strlen(s) + replacen * (nch - strlen(cmd->replace_str)) + 1);
         f = s;
         char *r = rtn;
         while (true) {
-            char *fn = strstr(f, conf->replace_str);
+            char *fn = strstr(f, cmd->replace_str);
             if (fn == NULL) {
                 memmove(r, f, strlen(f));
                 r[strlen(f)] = 0;
@@ -240,7 +239,7 @@ char *replace(Conf *conf, const char *s, int cmd_i)
             r += fn - f;
             memmove(r, buf1, strlen(buf1));
             r += strlen(buf1);
-            f = fn + strlen(conf->replace_str);
+            f = fn + strlen(cmd->replace_str);
         }
     }
     
@@ -268,12 +267,11 @@ int main(int argc, char** argv)
 {
     Conf *conf = malloc(sizeof(Conf));
     conf->format_style = FORMAT_NORMAL;
-    conf->input_cmd = NULL;
-    conf->output_cmd = NULL;
     conf->quiet = false;
-    conf->replace_str = NULL;
     conf->sleep = 3;
-
+    
+    bool batch = false;
+    char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
     while ((ch = getopt(argc, argv, "f:hi:I:o:qs:")) != -1) {
         switch (ch) {
@@ -289,19 +287,15 @@ int main(int argc, char** argv)
                 usage(0, NULL);
                 break;
             case 'I':
-                conf->replace_str = optarg;
+                replace_str = optarg;
                 break;
             case 'i':
-                conf->input_cmd = optarg;
+                input_cmd = optarg;
                 break;
             case 'o':
-                if (conf->quiet)
-                    usage(1, "Can't specify output command if -q is specified.");
-                conf->output_cmd = optarg;
+                output_cmd = optarg;
                 break;
             case 'q':
-                if (conf->output_cmd)
-                    usage(1, "Can't suppress stdout if -o is specified.");
                 conf->quiet = true;
                 break;
             case 's': {
@@ -322,6 +316,13 @@ int main(int argc, char** argv)
     }
     argc -= optind;
     argv += optind;
+
+    if (batch && conf->format_style == FORMAT_LIKE_TIME)
+        usage(1, "Can't use batch mode with -f liketime.");
+    if (batch && input_cmd)
+        usage(1, "In batch mode, -I/-i/-o must be specified per-command in the batch file.");
+    if (conf->quiet && output_cmd)
+        usage(1, "-q and -o are mutually exclusive.");
     
     if (argc == 0) {
         // num_runs not specified.
@@ -344,22 +345,26 @@ int main(int argc, char** argv)
 
     // Process the command(s).
 
-    if (argc == 0) {
-        // Command not specified.
-        usage(1, NULL);
+    if (batch) {
+        errx(1, "Not implemented.\n");
     }
-    conf->num_cmds = 1;
-    if (conf->num_cmds > 1 && conf->format_style == FORMAT_LIKE_TIME)
-        usage(1, "Can't run more than 1 command with -f liketime.");
-    conf->cmds = malloc(sizeof(char **) * conf->num_cmds);
-    conf->cmds[0] = argv;
-    conf->rusages = malloc(sizeof(struct rusage **) * conf->num_cmds);
-    conf->timevals = malloc(sizeof(struct timeval **) * conf->num_cmds);
-    for (int i = 0; i < conf->num_runs; i += 1) {
-        conf->rusages[i] = malloc(sizeof(struct rusage *) * conf->num_runs);
-        memset(conf->rusages[i], 0, sizeof(struct rusage *) * conf->num_cmds);
-        conf->timevals[i] = malloc(sizeof(struct timeval *) * conf->num_runs);
-        memset(conf->timevals[i], 0, sizeof(struct timeval *) * conf->num_cmds);
+    else {
+        if (argc == 0) {
+            // Command not specified.
+            usage(1, NULL);
+        }
+        conf->num_cmds = 1;
+        Cmd *cmd = malloc(sizeof(Cmd **));
+        conf->cmds = malloc(sizeof(Cmd *));
+        conf->cmds[0] = cmd;
+        cmd->argv = argv;
+        cmd->input_cmd = input_cmd;
+        cmd->output_cmd = output_cmd;
+        cmd->replace_str = replace_str;
+        cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
+        cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
+        memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
+        memset(cmd->timevals, 0, sizeof(struct rusage *) * conf->num_runs);
     }
 
     // Seed the random number generator.
@@ -377,15 +382,17 @@ int main(int argc, char** argv)
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_sec ^ tv.tv_usec);
 #	endif
-    
-    for (int i = 0; i < conf->num_runs; i += 1) {
-        run_cmd(conf, 0, i);
-        if (i + 1 < conf->num_runs && conf->sleep > 0) {
-#	        ifdef MT_HAVE_RANDOM
-	        usleep(random() % (conf->sleep * 1000000));
-#	        else
-	        usleep(rand() % (conf->sleep) * 1000000));
-#	        endif
+
+    for (int i = 0; i < conf->num_cmds; i += 1) {    
+        for (int j = 0; j < conf->num_runs; j += 1) {
+            run_cmd(conf, conf->cmds[i], j);
+            if (j + 1 < conf->num_runs && conf->sleep > 0) {
+#	            ifdef MT_HAVE_RANDOM
+	            usleep(random() % (conf->sleep * 1000000));
+#	            else
+	            usleep(rand() % (conf->sleep) * 1000000));
+#   	        endif
+            }
         }
     }
     
