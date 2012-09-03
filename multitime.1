@@ -91,7 +91,9 @@ found in
 .Ar inputcmd ,
 .Ar outputcmd
 are replaced with an integer denoting the current execution run number, from
-0 (inclusive) to num runs (exclusive).
+1 to
+.Ar numruns
+(both inclusive).
 .It Ic -i Ar stdincmd
 Before each execution of
 .Ar command ,
@@ -144,12 +146,14 @@ A basic invocation of
 .Nm 
 is as follows:
 .Pp
-.Dl $ multitime -5 md5 -t
+.Dl $ multitime 10 md5 -t
 .Pp
 .Ar command
 will produce its output as normal;
 .Nm
 will then produce output such as the following on stderr:
+.Pp
+.Dl 1: md5 -t
 .Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
 .It       Ta  Mean   Ta  Std.Dev. Ta  Min    Ta  Median  Ta  Max
 .It real  Ta  0.222  Ta  0.000    Ta  0.222  Ta  0.222   Ta  0.222       
@@ -162,8 +166,8 @@ As an example of more complex uses of
 one could time the overall performance of
 .Xr sort 1
 on different sequences of random data using
-.Ic -f :
-.Dl $ multitime -i "jot -r 1000000 1 100000" -q 3 sort
+.Ic -i :
+.Dl $ multitime -i 'jot -r 1000000 1 100000' -q 10 sort
 Note that each execution of
 .Xr sort 1
 will receive different output from
@@ -171,12 +175,12 @@ will receive different output from
 If you want each execution to receive the same data, use a two-stage sequence with
 .Xr cat 1 :
 .Dl $ jot -r 1000000 1 100000 > file
-.Dl $ multitime -i 'cat file' -q 3 sort
+.Dl $ multitime -i 'cat file' -q 10 sort
 .Pp
 If you are timing
 .Xr sort 1
-against pre-defined batches of data (called data0, data1, ... data29):
-.Dl $ multitime -I{} -i 'cat data{}' -q 30 sort
+against pre-defined batches of data (called data1, data2, ..., data10):
+.Dl $ multitime -I{} -i 'cat data{}' -q 10 sort
 .Pp
 If you want to cache the output of each execution of
 .Ar command

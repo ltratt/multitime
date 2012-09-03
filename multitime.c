@@ -196,9 +196,9 @@ bool fcopy(FILE *rf, FILE *wf)
 
 //
 // Take in string 's' and replace all instances of cmd->replace_str with
-// str(runi). Always returns a malloc'd string (even if cmd->replace_str is not
-// in s) which must be manually freed *except* if s is NULL, whereupon NULL is
-// returned.
+// str(runi + 1). Always returns a malloc'd string (even if cmd->replace_str is
+// not in s) which must be manually freed *except* if s is NULL, whereupon NULL
+// is returned.
 //
 
 char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
@@ -222,9 +222,9 @@ char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
             replacen++;
             f += strlen(cmd->replace_str);
         }
-        int nch = snprintf(NULL, 0, "%d", runi);
+        int nch = snprintf(NULL, 0, "%d", runi + 1);
         char buf1[nch + 1];
-        snprintf(buf1, nch + 1, "%d", runi);
+        snprintf(buf1, nch + 1, "%d", runi + 1);
         rtn = malloc(strlen(s) + replacen * (nch - strlen(cmd->replace_str)) + 1);
         f = s;
         char *r = rtn;
