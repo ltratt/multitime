@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -53,6 +54,7 @@ void run_cmd(Conf *, Cmd *, int);
 FILE *read_input(Conf *, Cmd *, int);
 bool fcopy(FILE *, FILE *);
 char *replace(Conf *, Cmd *, const char *, int);
+char escape_char(char);
 
 
 
@@ -249,16 +251,217 @@ char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// main
+// Start-up routines
 //
+
+void parse_batch(Conf *conf, char *path)
+{
+    FILE *bf = fopen(path, "r");
+    if (bf == NULL)
+        err(1, "Error when trying to open '%s'", path);
+    struct stat sb;
+    if (fstat(fileno(bf), &sb) == -1)
+        err(1, "Error when trying to fstat '%s'", path);
+    size_t bfsz = sb.st_size;
+    char *bd = malloc(bfsz);
+    if (fread(bd, 1, bfsz, bf) < sb.st_size)
+        err(1, "Error when trying to read from '%s'", path);
+    fclose(bf);
+
+    int num_cmds = 0;
+    Cmd **cmds = malloc(sizeof(Cmd *));
+    off_t i = 0;
+    int lineno = 0;
+    char *msg = NULL; // Set to an error message before doing "goto parse_err".
+    while (i < bfsz) {
+        // Skip space at beginning of line.
+        while (i < bfsz && (bd[i] == ' ' || bd[i] == '\t'))
+            i += 1;
+        if (i == bfsz)
+            break;
+        if (bd[i] == '\n' || bd[i] == '\r') {
+            if (bd[i] == '\n')
+                lineno += 1;
+            i += 1;
+            continue;
+        }
+        // Skip comment lines.
+        if (bd[i] == '#') {
+            if (bd[i] == '\n')
+                lineno += 1;
+            i += 1;
+            while (i < bfsz && (bd[i] != '\n' || bd[i] != '\r'))
+                i += 1;
+            if (i == bfsz)
+                break;
+            continue;
+        }
+
+        int argc = 0;
+        char **argv = malloc(sizeof(char *));
+        while (i < bfsz && bd[i] != '\n') {
+            int j = i;
+            while (j < bfsz && (bd[j] == ' ' || bd[j] == '\t' || bd[j] == '\r'))
+                j += 1;
+            if (j > i) {
+                i = j;
+                continue;
+            }
+
+            char *arg;
+            if (bd[i] == '"' || bd[i] == '\'') {
+                char qc = bd[i];
+                i += 1;
+                // Work out the length of the string.
+                int j = i;
+                size_t argsz = 0;
+                while (j < bfsz) {
+                    if (bd[j] == '\n' || bd[j] == '\r') {
+                        msg = "Unterminated string";
+                        goto parse_err;
+                    }
+                    if (bd[j] == '\\') {
+                        argsz += 1;
+                        j += 2;
+                    }
+                    else if (bd[j] == qc)
+                        break;
+                    else {
+                        argsz += 1;
+                        j += 1;
+                    }
+                }
+                if (j == bfsz) {
+                    msg = "Unterminated string";
+                    goto parse_err;
+                }
+                arg = malloc(argsz + 1);
+                if (arg == NULL)
+                    errx(1, "Out of memory.");
+                // Copy the arg.
+                j = 0;
+                while (i < bfsz && bd[i] != qc) {
+                    if (bd[i] == '\\') {
+                        arg[j] = escape_char(bd[i + 1]);
+                        i += 2;
+                    }
+                    else {
+                        arg[j] = bd[i];
+                        i += 1;
+                    }
+                    j += 1;
+                }
+                i += 1;
+                arg[j] = 0;
+            }
+            else {
+                // Work out the length of the string
+                int j = i;
+                while (j < bfsz && !(bd[j] == ' ' || bd[j] == '\n'
+                  || bd[j] == '\r'))
+                    j += 1;
+                if (j < bfsz && bd[j] == '\n')
+                    lineno += 1;
+                arg = malloc((j - i) + 1);
+                if (arg == NULL)
+                    errx(1, "Out of memory.");
+                memmove(arg, bd + i, j - i);
+                arg[j - i] = 0;
+                i = j;
+            }
+            argc += 1;
+            argv = realloc(argv, argc * sizeof(char *));
+            if (argv == NULL)
+                errx(1, "Out of memory.");
+            argv[argc - 1] = arg;
+        }
+
+        Cmd *cmd = malloc(sizeof(Cmd));
+        cmd->input_cmd = cmd->output_cmd = cmd->replace_str = NULL;
+        cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
+        cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
+        memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
+        memset(cmd->timevals, 0, sizeof(struct rusage *) * conf->num_runs);
+        int j = 0;
+        while (j < argc) {
+            if (strcmp(argv[j], "-I") == 0) {
+                if (j + 1 == argc)
+                    errx(1, "option requires an argument -- I");
+                cmd->replace_str = argv[j + 1];
+                free(argv[j]);
+                j += 2;
+                continue;
+            }
+            else if (strcmp(argv[j], "-i") == 0) {
+                if (j + 1 == argc)
+                    errx(1, "option requires an argument -- i");
+                cmd->input_cmd = argv[j + 1];
+                free(argv[j]);
+                j += 2;
+                continue;
+            }
+            else if (strcmp(argv[j], "-o") == 0) {
+                if (j + 1 == argc)
+                    errx(1, "option requires an argument -- o");
+                cmd->output_cmd = argv[j + 1];
+                free(argv[j]);
+                j += 2;
+                continue;
+            }
+            else if (strlen(argv[j]) > 0 && argv[j][0] == '-')
+                errx(1, "unknown option -- %c", argv[j][0]);
+            break;
+        }
+        char **new_argv = malloc((argc - j + 1) * sizeof(char *));
+        memmove(new_argv, argv + j, (argc - j) * sizeof(char *));
+        argc -= j;
+        new_argv[argc] = NULL;
+        cmd->argv = new_argv;
+        num_cmds += 1;
+        cmds = realloc(cmds, num_cmds * sizeof(Cmd *));
+        if (cmds == NULL)
+            errx(1, "Out of memory.");
+        cmds[num_cmds - 1] = cmd;
+    }
+    
+    conf->cmds = cmds;
+    conf->num_cmds = num_cmds;
+    
+    return;
+
+parse_err:
+    errx(1, "%s at line %d.\n", msg, lineno);
+}
+
+
+
+char escape_char(char c)
+{
+    switch (c) {
+        case '0':
+            return '\0';
+        case 'n':
+            return '\n';
+        case 'r':
+            return '\r';
+        case 't':
+            return '\r';
+        default:
+            return c;
+    }
+}
+
+
 
 void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage: %s [-f <liketime|rusage>] [-I <replstr>] "
-      "[-i <stdincmd>] [-o <stdoutcmd>] [-q] [-s <sleep seconds>] <numruns> <command> "
-      "[<arg 1> ... <arg n>]\n", __progname);
+    fprintf(stderr, "Usage:\n  %s [-f <liketime|rusage>] [-I <replstr>] "
+      "[-i <stdincmd>]\n    [-o <stdoutcmd>] [-q] [-s <sleep>] <numruns> "
+      "<command> [<arg 1> ... <arg n>]\n"
+      "  %s -b [-f <rusage>] [-q] [-s <sleep>] "
+      "<numruns> <file>\n", __progname, __progname);
     exit(rtn_code);
 }
 
@@ -273,8 +476,11 @@ int main(int argc, char** argv)
     bool batch = false;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "f:hi:I:o:qs:")) != -1) {
+    while ((ch = getopt(argc, argv, "bf:hi:I:o:qs:")) != -1) {
         switch (ch) {
+            case 'b':
+                batch = true;
+                break;
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
                     conf->format_style = FORMAT_LIKE_TIME;
@@ -318,9 +524,9 @@ int main(int argc, char** argv)
     argv += optind;
 
     if (batch && conf->format_style == FORMAT_LIKE_TIME)
-        usage(1, "Can't use batch mode with -f liketime.");
+        usage(1, "Can't use batch file mode with -f liketime.");
     if (batch && input_cmd)
-        usage(1, "In batch mode, -I/-i/-o must be specified per-command in the batch file.");
+        usage(1, "In batch file mode, -I/-i/-o must be specified per-command in the batch file.");
     if (conf->quiet && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
     
@@ -346,13 +552,21 @@ int main(int argc, char** argv)
     // Process the command(s).
 
     if (batch) {
-        errx(1, "Not implemented.\n");
+        // Batch file mode.
+
+        if (argc == 0)
+            usage(1, "Missing command.");
+        else if (argc > 1)
+            usage(1, "Extraneous arguments specified after batch file name.");
+
+        parse_batch(conf, argv[0]);
     }
     else {
-        if (argc == 0) {
-            // Command not specified.
-            usage(1, NULL);
-        }
+        // Simple mode: one command specified on the command-line.
+
+        if (argc == 0)
+            usage(1, "Missing command.");
+
         conf->num_cmds = 1;
         Cmd *cmd = malloc(sizeof(Cmd **));
         conf->cmds = malloc(sizeof(Cmd *));

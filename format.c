@@ -266,7 +266,7 @@ void format_other(Conf *conf)
           max_sys);
 
         if (conf->format_style == FORMAT_NORMAL)
-            return;
+            continue;
 
         //
         // rusage output.
