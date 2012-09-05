@@ -28,10 +28,10 @@
 .Op Fl f Ar liketime | rusage
 .Op Fl I Ar replstr
 .Op Fl i Ar stdincmd
+.Op Fl n Ar numruns
 .Op Fl o Ar stdoutcmd
 .Op Fl q
 .Op Fl s Ar sleep
-.Ar numruns
 .Ar command
 .Op Ar options ...
 .Sh DESCRIPTION
@@ -57,10 +57,13 @@ also has a number of options to help advanced uses. For basic uses,
 .Nm
 can replace
 .Xr time 1
-by simply prepending the command to be run with an integer specifying how
-many runs should be executed. e.g.:
+by using the
+.Ic -n
+option to specifying how many times
+.Ar command
+should be executed. e.g.:
 .Pp
-.Dl $ multitime 5 md5 -t
+.Dl $ multitime -n 5 md5 -t
 .Pp
 The full set of options is as follows:
 .Bl -tag -width Ds
@@ -107,6 +110,10 @@ sees exactly the input on stdin expected.
 .Ar stdincmd
 is a full shell command which is passed to
 .Xr popen 3 .
+.It Ic -n Ar numruns
+Specify how many times
+.Ar command
+should be run. Defaults to 1.
 .It Ic -o Ar stdoutcmd
 When executing
 .Ar command ,
@@ -146,7 +153,7 @@ A basic invocation of
 .Nm 
 is as follows:
 .Pp
-.Dl $ multitime 10 md5 -t
+.Dl $ multitime -n 10 md5 -t
 .Pp
 .Ar command
 will produce its output as normal;
@@ -167,7 +174,7 @@ one could time the overall performance of
 .Xr sort 1
 on different sequences of random data using
 .Ic -i :
-.Dl $ multitime -i 'jot -r 1000000 1 100000' -q 10 sort
+.Dl $ multitime -i 'jot -r 1000000 1 100000' -n 10 sort
 Note that each execution of
 .Xr sort 1
 will receive different output from
@@ -175,18 +182,18 @@ will receive different output from
 If you want each execution to receive the same data, use a two-stage sequence with
 .Xr cat 1 :
 .Dl $ jot -r 1000000 1 100000 > file
-.Dl $ multitime -i 'cat file' -q 10 sort
+.Dl $ multitime -i 'cat file' -n 10 -q sort
 .Pp
 If you are timing
 .Xr sort 1
 against pre-defined batches of data (called data1, data2, ..., data10):
-.Dl $ multitime -I{} -i 'cat data{}' -q 10 sort
+.Dl $ multitime -I{} -i 'cat data{}' -n 10 -q sort
 .Pp
 If you want to cache the output of each execution of
 .Ar command
 use
 .Ic -o :
-.Dl $ multitime -I{} -o 'cat > file{}' 3 md5 -t
+.Dl $ multitime -I{} -n 3 -o 'cat > file{}' md5 -t
 .Sh AUTHORS
 .An -nosplit
 .Nm

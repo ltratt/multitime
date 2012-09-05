@@ -480,10 +480,10 @@ void usage(int rtn_code, char *msg)
     if (msg)
         fprintf(stderr, "%s\n", msg);
     fprintf(stderr, "Usage:\n  %s [-f <liketime|rusage>] [-I <replstr>] "
-      "[-i <stdincmd>]\n    [-o <stdoutcmd>] [-q] [-s <sleep>] <numruns> "
-      "<command> [<arg 1> ... <arg n>]\n"
+      "[-i <stdincmd>]\n    [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>] "
+      "<command>\n    [<arg 1> ... <arg n>]\n"
       "  %s -b [-f <rusage>] [-q] [-s <sleep>] "
-      "<numruns> <file>\n", __progname, __progname);
+      "[-n <numruns>] <file>\n", __progname, __progname);
     exit(rtn_code);
 }
 
@@ -491,6 +491,7 @@ void usage(int rtn_code, char *msg)
 int main(int argc, char** argv)
 {
     Conf *conf = malloc(sizeof(Conf));
+    conf->num_runs = 1;
     conf->format_style = FORMAT_NORMAL;
     conf->quiet = false;
     conf->sleep = 3;
@@ -498,7 +499,7 @@ int main(int argc, char** argv)
     bool batch = false;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "bf:hi:I:o:qs:")) != -1) {
+    while ((ch = getopt(argc, argv, "bf:hi:n:I:o:qs:")) != -1) {
         switch (ch) {
             case 'b':
                 batch = true;
@@ -519,6 +520,17 @@ int main(int argc, char** argv)
                 break;
             case 'i':
                 input_cmd = optarg;
+                break;
+            case 'n':
+                errno = 0;
+                char *ep = optarg + strlen(optarg);
+                long lval = strtoimax(optarg, &ep, 10);
+                if (optarg[0] == 0 || *ep != 0)
+                    usage(1, "'num runs' not a valid number.");
+                if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
+                  || lval <= 0 || lval >= UINT_MAX)
+                    usage(1, "'num runs' out of range.");
+                conf->num_runs = (int) lval;
                 break;
             case 'o':
                 output_cmd = optarg;
@@ -552,42 +564,21 @@ int main(int argc, char** argv)
     if (conf->quiet && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
     
-    if (argc == 0) {
-        // num_runs not specified.
-        usage(1, NULL);
-    }
-
-    // Process num_runs.
-
-    errno = 0;
-    char *ep = argv[0] + strlen(argv[0]);
-    long lval = strtoimax(argv[0], &ep, 10);
-    if (argv[0][0] == '\0' || *ep != '\0')
-        usage(1, "'num runs' not a valid number.");
-    if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
-      || lval <= 0 || lval >= UINT_MAX)
-        usage(1, "'num runs' out of range.");
-    conf->num_runs = (int) lval;
-    argc -= 1;
-    argv += 1;
-
     // Process the command(s).
+
+    if (argc == 0)
+        usage(1, "Missing command.");
 
     if (batch) {
         // Batch file mode.
 
-        if (argc == 0)
-            usage(1, "Missing command.");
-        else if (argc > 1)
+        if (argc > 1)
             usage(1, "Extraneous arguments specified after batch file name.");
 
         parse_batch(conf, argv[0]);
     }
     else {
         // Simple mode: one command specified on the command-line.
-
-        if (argc == 0)
-            usage(1, "Missing command.");
 
         conf->num_cmds = 1;
         Cmd *cmd = malloc(sizeof(Cmd **));
