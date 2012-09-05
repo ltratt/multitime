@@ -72,6 +72,12 @@ char escape_char(char);
 
 void execute_cmd(Conf *conf, Cmd *cmd, int runi)
 {
+    if (conf->verbosity > 0) {
+        fprintf(stderr, "===> Executing ");
+        pp_cmd(conf, cmd);
+        fprintf(stderr, "\n");
+    }
+
     FILE *tmpf = NULL;
     if (cmd->input_cmd)
         tmpf = read_input(conf, cmd, runi);
@@ -504,12 +510,13 @@ int main(int argc, char** argv)
     conf->num_runs = 1;
     conf->format_style = FORMAT_NORMAL;
     conf->sleep = 3;
+    conf->verbosity = 0;
     
     bool quiet = false;
     char *batch_file = NULL;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "b:f:hi:n:I:o:qs:")) != -1) {
+    while ((ch = getopt(argc, argv, "b:f:hi:n:I:o:qs:v")) != -1) {
         switch (ch) {
             case 'b':
                 batch_file = optarg;
@@ -559,6 +566,9 @@ int main(int argc, char** argv)
                 conf->sleep = (int) lval;
                 break;
             }
+            case 'v':
+                conf->verbosity += 1;
+                break;
             default:
                 usage(1, NULL);
                 break;

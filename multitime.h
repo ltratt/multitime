@@ -39,4 +39,6 @@ typedef struct {
     enum Format_Style format_style;
     int sleep;                  // Time to sleep between commands, in seconds.
                                 // 0 = no sleep.
+    int verbosity;              // 0 to +ve: higher values may increase
+                                // verbosity.
 } Conf;

@@ -31,8 +31,37 @@
 #include "multitime.h"
 
 
+extern char* __progname;
+
 #define TIMEVAL_TO_DOUBLE(t) \
   ((double) (t)->tv_sec + (double) (t)->tv_usec / 1000000)
+
+
+
+void pp_cmd(Conf *conf, Cmd *cmd)
+{
+    // Pretty-print the commands argv: we try to be semi-sensible about
+    // escaping strings, but it's never going to be perfect, as the rules
+    // are somewhat shell dependent.
+
+    for (int i = 0; cmd->argv[i] != NULL; i += 1) {
+        if (i > 0)
+            fprintf(stderr, " ");
+        char *arg = cmd->argv[i];
+        if (strchr(arg, ' ') == NULL)
+            fprintf(stderr, "%s", cmd->argv[i]);
+        else {
+            fprintf(stderr, "\"");
+            for (int k = 0; k < strlen(arg); k += 1) {
+                if (arg[k] == '\"')
+                    fprintf(stderr, "\\\"");
+                else
+                    fprintf(stderr, "%c", arg[k]);
+            }
+            fprintf(stderr, "\"");
+        }
+    }
+}
 
 
 
@@ -133,31 +162,14 @@ void format_like_time(Conf *conf)
 
 void format_other(Conf *conf)
 {
+    fprintf(stderr, "===> %s results\n", __progname);
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
 
-        // Pretty-print the commands argv: we try to be semi-sensible about
-        // escaping strings, but it's never going to be perfect, as the rules
-        // are somewhat shell dependent.
-
         if (i > 0)
             fprintf(stderr, "\n");
-        fprintf(stderr, "%d:", i + 1);
-        for (int j = 0; cmd->argv[j] != NULL; j += 1) {
-            char *arg = cmd->argv[j];
-            if (strchr(arg, ' ') == NULL)
-                fprintf(stderr, " %s", cmd->argv[j]);
-            else {
-                fprintf(stderr, " \"");
-                for (int k = 0; k < strlen(arg); k += 1) {
-                    if (arg[k] == '\"')
-                        fprintf(stderr, "\\\"");
-                    else
-                        fprintf(stderr, "%c", arg[k]);
-                }
-                fprintf(stderr, "\"");
-            }
-        }
+        fprintf(stderr, "%d: ", i + 1);
+        pp_cmd(conf, cmd);
         fprintf(stderr, "\n");
         fprintf(stderr,
           "            Mean        Std.Dev.    Min         Median      Max\n");

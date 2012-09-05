@@ -19,6 +19,7 @@
 // IN THE SOFTWARE.
 
 
+void pp_cmd(Conf *, Cmd *);
 int cmp_timeval(const void *, const void *);
 void format_like_time(Conf *);
 void format_other(Conf *);

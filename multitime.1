@@ -32,6 +32,7 @@
 .Op Fl o Ar stdoutcmd
 .Op Fl q
 .Op Fl s Ar sleep
+.Op Fl v
 .Ar command
 .Op arg1, ..., argn
 .Pp
@@ -40,6 +41,7 @@
 .Op Fl f Ar liketime | rusage
 .Op Fl n Ar numruns
 .Op Fl s Ar sleep
+.Op Fl v
 .Sh DESCRIPTION
 Unix's
 .Xr time 1
@@ -162,6 +164,8 @@ this can smooth out temporary peaks and troughs. If not specified,
 defaults to 3 seconds; if set to 0,
 .Nm
 does not sleep at all between executions.
+.It Ic -v
+Causes verbose output (e.g. which commands are being executed).
 .El
 .Sh BATCHFILES
 Batchfiles are only needed for advanced uses of
@@ -194,8 +198,9 @@ to be run. Each line has the format:
 The
 .Ic -f ,
 .Ic -n ,
+.Ic -s ,
 and
-.Ic -s
+.Ic -v
 options are global and can not be specified in the batch file.
 .Sh EXAMPLES
 A basic invocation of
