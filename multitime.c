@@ -50,7 +50,7 @@
 extern char* __progname;
 
 void usage(int, char *);
-void run_cmd(Conf *, Cmd *, int);
+void execute_cmd(Conf *, Cmd *, int);
 FILE *read_input(Conf *, Cmd *, int);
 bool fcopy(FILE *, FILE *);
 char *replace(Conf *, Cmd *, const char *, int);
@@ -70,7 +70,7 @@ char escape_char(char);
 
 #include <fcntl.h>
 
-void run_cmd(Conf *conf, Cmd *cmd, int runi)
+void execute_cmd(Conf *conf, Cmd *cmd, int runi)
 {
     FILE *tmpf = NULL;
     if (cmd->input_cmd)
@@ -618,12 +618,34 @@ int main(int argc, char** argv)
 	srand(tv.tv_sec ^ tv.tv_usec);
 #	endif
 
-    for (int i = 0; i < conf->num_cmds; i += 1) {    
-        for (int j = 0; j < conf->num_runs; j += 1) {
-            run_cmd(conf, conf->cmds[i], j);
-            if (j + 1 < conf->num_runs && conf->sleep > 0)
-	            usleep(RANDN(conf->sleep * 1000000));
+    for (int i = 0; i < (conf->num_cmds * conf->num_runs); i += 1) {
+        int cmdi;
+        // Find a command which has not yet had all its runs executed.
+        while (true) {
+            cmdi = RANDN(conf->num_cmds);
+            int j;
+            for (j = 0; j < conf->num_runs; j += 1) {
+                if (conf->cmds[cmdi]->rusages[j] == NULL)
+                    break;
+            }
+            if (j < conf->num_runs)
+                break;
         }
+
+        // Find a run of cmd which has not yet been executed.
+        Cmd *cmd = conf->cmds[cmdi];
+        int runi;
+        while (true) {
+            runi = RANDN(conf->num_runs);
+            if (cmd->rusages[runi] == NULL)
+                break;
+        }
+
+        // Execute the command and, if there are more commands yet to be run,
+        // sleep.
+        execute_cmd(conf, cmd, runi);
+        if (i + 1 < conf->num_runs && conf->sleep > 0)
+	        usleep(RANDN(conf->sleep * 1000000));
     }
     
     switch (conf->format_style) {
