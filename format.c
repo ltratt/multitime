@@ -140,6 +140,8 @@ void format_other(Conf *conf)
         // escaping strings, but it's never going to be perfect, as the rules
         // are somewhat shell dependent.
 
+        if (i > 0)
+            fprintf(stderr, "\n");
         fprintf(stderr, "%d:", i + 1);
         for (int j = 0; cmd->argv[j] != NULL; j += 1) {
             char *arg = cmd->argv[j];
