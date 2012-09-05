@@ -254,6 +254,11 @@ char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
 // Start-up routines
 //
 
+//
+// Parse a batch file and update conf accordingly. This is fairly simplistic
+// at the moment, not allowing e.g. breaking of lines with '\'.
+//
+
 void parse_batch(Conf *conf, char *path)
 {
     FILE *bf = fopen(path, "r");
@@ -299,8 +304,9 @@ void parse_batch(Conf *conf, char *path)
 
         int argc = 0;
         char **argv = malloc(sizeof(char *));
-        while (i < bfsz && bd[i] != '\n') {
+        while (i < bfsz && bd[i] != '\n' && bd[i] != '\r') {
             int j = i;
+            // Skip whitespace at the beginning of lines, as well as complete blank lines
             while (j < bfsz && (bd[j] == ' ' || bd[j] == '\t' || bd[j] == '\r'))
                 j += 1;
             if (j > i) {
@@ -309,66 +315,77 @@ void parse_batch(Conf *conf, char *path)
             }
 
             char *arg;
+            char qc = 0;
             if (bd[i] == '"' || bd[i] == '\'') {
-                char qc = bd[i];
+                qc = bd[i];
                 i += 1;
-                // Work out the length of the string.
-                int j = i;
-                size_t argsz = 0;
-                while (j < bfsz) {
-                    if (bd[j] == '\n' || bd[j] == '\r') {
+            }
+            // Work out the length of the arg. Note that two-character
+            // pairs '\x' are length 2 in the input, but only 1 character
+            // in the arg.
+            j = i;
+            size_t argsz = 0;
+            while (j < bfsz) {
+                if (qc && bd[j] == qc)
+                    break;
+                else if (bd[j] == '\n' || bd[j] == '\r') {
+                    if (qc) {
                         msg = "Unterminated string";
                         goto parse_err;
                     }
-                    if (bd[j] == '\\') {
-                        argsz += 1;
-                        j += 2;
-                    }
-                    else if (bd[j] == qc)
+                    else
                         break;
-                    else {
-                        argsz += 1;
-                        j += 1;
-                    }
                 }
-                if (j == bfsz) {
-                    msg = "Unterminated string";
-                    goto parse_err;
+                else if (!qc && bd[j] == ' ') {
+                    break;
                 }
-                arg = malloc(argsz + 1);
-                if (arg == NULL)
-                    errx(1, "Out of memory.");
-                // Copy the arg.
-                j = 0;
-                while (i < bfsz && bd[i] != qc) {
-                    if (bd[i] == '\\') {
-                        arg[j] = escape_char(bd[i + 1]);
-                        i += 2;
+                else if (bd[j] == '\\') {
+                    if (j + 1 == bfsz) {
+                        msg = "Escape char not specified";
+                        goto parse_err;
                     }
-                    else {
-                        arg[j] = bd[i];
-                        i += 1;
-                    }
+                    argsz += 1;
+                    j += 2;
+                }
+                else {
+                    argsz += 1;
                     j += 1;
                 }
-                i += 1;
-                arg[j] = 0;
             }
-            else {
-                // Work out the length of the string
-                int j = i;
-                while (j < bfsz && !(bd[j] == ' ' || bd[j] == '\n'
-                  || bd[j] == '\r'))
+            if (qc && j == bfsz) {
+                msg = "Unterminated string";
+                goto parse_err;
+            }
+            arg = malloc(argsz + 1);
+            if (arg == NULL)
+                errx(1, "Out of memory.");
+            // Copy the arg.
+            j = 0;
+            while (i < bfsz) {
+                if (qc && bd[i] == qc) {
+                    i += 1;
+                    break;
+                }
+                else if (bd[i] == '\n' || bd[i] == '\r') {
+                    assert(!qc);
+                    break;
+                }
+                else if (!qc && bd[i] == ' ')
+                    break;
+                else if (bd[i] == '\\') {
+                    assert(i + 1 < bfsz);
+                    arg[j] = escape_char(bd[i + 1]);
+                    i += 2;
                     j += 1;
-                if (j < bfsz && bd[j] == '\n')
-                    lineno += 1;
-                arg = malloc((j - i) + 1);
-                if (arg == NULL)
-                    errx(1, "Out of memory.");
-                memmove(arg, bd + i, j - i);
-                arg[j - i] = 0;
-                i = j;
+                }
+                else {
+                    arg[j] = bd[i];
+                    i += 1;
+                    j += 1;
+                }
             }
+            arg[j] = 0;
+
             argc += 1;
             argv = realloc(argv, argc * sizeof(char *));
             if (argv == NULL)
@@ -434,6 +451,11 @@ parse_err:
 }
 
 
+
+//
+// Given a char c, assuming it was prefixed by '\' (e.g. '\r'), return the
+// escaped code.
+//
 
 char escape_char(char c)
 {
