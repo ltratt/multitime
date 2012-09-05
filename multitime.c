@@ -56,6 +56,12 @@ bool fcopy(FILE *, FILE *);
 char *replace(Conf *, Cmd *, const char *, int);
 char escape_char(char);
 
+#ifdef MT_HAVE_RANDOM
+#define RANDN(n) (random() % n)
+#else
+#define RANDN(n) (rand() % n)
+#endif
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -491,6 +497,7 @@ void usage(int rtn_code, char *msg)
 }
 
 
+
 int main(int argc, char** argv)
 {
     Conf *conf = malloc(sizeof(Conf));
@@ -614,13 +621,8 @@ int main(int argc, char** argv)
     for (int i = 0; i < conf->num_cmds; i += 1) {    
         for (int j = 0; j < conf->num_runs; j += 1) {
             run_cmd(conf, conf->cmds[i], j);
-            if (j + 1 < conf->num_runs && conf->sleep > 0) {
-#	            ifdef MT_HAVE_RANDOM
-	            usleep(random() % (conf->sleep * 1000000));
-#	            else
-	            usleep(rand() % (conf->sleep) * 1000000));
-#   	        endif
-            }
+            if (j + 1 < conf->num_runs && conf->sleep > 0)
+	            usleep(RANDN(conf->sleep * 1000000));
         }
     }
     
