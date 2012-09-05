@@ -168,14 +168,15 @@ FILE *read_input(Conf *conf, Cmd *cmd, int runi)
         goto cmd_err;
     
     fcopy(cmdf, tmpf);
-    pclose(cmdf);
+    if (pclose(cmdf) != 0)
+        goto cmd_err;
     free(input_cmd);
     fseek(tmpf, 0, SEEK_SET);
     
     return tmpf;
 
 cmd_err:
-    err(1, "Error when attempting to run %s.\n", cmd->input_cmd);
+    errx(1, "Error when attempting to run %s.", cmd->input_cmd);
 }
 
 
