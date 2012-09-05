@@ -33,7 +33,13 @@
 .Op Fl q
 .Op Fl s Ar sleep
 .Ar command
-.Op Ar options ...
+.Op arg1, ..., argn
+.Pp
+.Nm multitime
+.Fl b Ar batchfile
+.Op Fl f Ar liketime | rusage
+.Op Fl n Ar numruns
+.Op Fl s Ar sleep
 .Sh DESCRIPTION
 Unix's
 .Xr time 1
@@ -67,6 +73,12 @@ should be executed. e.g.:
 .Pp
 The full set of options is as follows:
 .Bl -tag -width Ds
+.It Ic -b Ar batchfile
+Execute multiple commands from
+.Ar batchfile .
+See the
+.Sx BATCHFILES
+section qfor more details.
 .It Ic -f Ar liketime | rusage
 The default output style of
 .Nm
@@ -148,6 +160,44 @@ defaults to 3 seconds; if set to 0,
 .Nm
 does not sleep at all between executions.
 .El
+.Sh BATCHFILES
+Batchfiles are only needed for advanced uses of
+.Nm .
+One important use is when
+.Nm
+is being used to compare the performance of multiple commands. The obvious
+way to do this is to run
+.Nm
+for each command and record its output. However, it is possible that one
+command is unduly affected by issues elsewhere in the machine (e.g. a
+.Xr Cron 8
+job running in the background), distorting the comparison. Batchfiles allow
+multiple completely different commands to be run, with each iteration running
+a random command. Assuming that
+.Ar numruns
+is set sufficiently high, batchfiles tend to better spread timing problems
+over the whole set of commands rather than a single command.
+
+The format of batchfiles is relatively simple. Each line specifies a command
+to be run. Each line has the format:
+
+.Op Fl I Ar replstr
+.Op Fl i Ar stdincmd
+.Op Fl o Ar stdoutcmd
+.Op Fl q
+.Ar command
+.Op arg1, ..., argn
+.Pp
+The
+.Ic -f ,
+.Ic -n ,
+and
+.Ic -s
+options are global and can not be specified in the batch file.
+An example batch file is as follows:
+
+.Dl -i 'jot -r 100000 1 100000' -o 'cat > /dev/null' sort
+.Dl md5 -t
 .Sh EXAMPLES
 A basic invocation of
 .Nm 

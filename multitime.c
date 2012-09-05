@@ -482,8 +482,8 @@ void usage(int rtn_code, char *msg)
     fprintf(stderr, "Usage:\n  %s [-f <liketime|rusage>] [-I <replstr>] "
       "[-i <stdincmd>]\n    [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>] "
       "<command>\n    [<arg 1> ... <arg n>]\n"
-      "  %s -b [-f <rusage>] [-q] [-s <sleep>] "
-      "[-n <numruns>] <file>\n", __progname, __progname);
+      "  %s -b <file> [-f <rusage>] [-q] [-s <sleep>] "
+      "[-n <numruns>]\n", __progname, __progname);
     exit(rtn_code);
 }
 
@@ -496,13 +496,13 @@ int main(int argc, char** argv)
     conf->quiet = false;
     conf->sleep = 3;
     
-    bool batch = false;
+    char *batch_file = NULL;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "bf:hi:n:I:o:qs:")) != -1) {
+    while ((ch = getopt(argc, argv, "b:f:hi:n:I:o:qs:")) != -1) {
         switch (ch) {
             case 'b':
-                batch = true;
+                batch_file = optarg;
                 break;
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
@@ -557,28 +557,25 @@ int main(int argc, char** argv)
     argc -= optind;
     argv += optind;
 
-    if (batch && conf->format_style == FORMAT_LIKE_TIME)
+    if (batch_file && conf->format_style == FORMAT_LIKE_TIME)
         usage(1, "Can't use batch file mode with -f liketime.");
-    if (batch && input_cmd)
+    if (batch_file && input_cmd)
         usage(1, "In batch file mode, -I/-i/-o must be specified per-command in the batch file.");
     if (conf->quiet && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
     
     // Process the command(s).
 
-    if (argc == 0)
-        usage(1, "Missing command.");
-
-    if (batch) {
+    if (batch_file) {
         // Batch file mode.
 
-        if (argc > 1)
-            usage(1, "Extraneous arguments specified after batch file name.");
-
-        parse_batch(conf, argv[0]);
+        parse_batch(conf, batch_file);
     }
     else {
         // Simple mode: one command specified on the command-line.
+
+        if (argc == 0)
+            usage(1, "Missing command.");
 
         conf->num_cmds = 1;
         Cmd *cmd = malloc(sizeof(Cmd **));
