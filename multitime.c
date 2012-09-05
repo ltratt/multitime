@@ -92,7 +92,7 @@ void run_cmd(Conf *conf, Cmd *cmd, int runi)
         if (tmpf && dup2(fileno(tmpf), STDIN_FILENO) == -1)
             goto cmd_err;
 
-        if (conf->quiet && freopen("/dev/null", "w", stdout) == NULL)
+        if (cmd->quiet && freopen("/dev/null", "w", stdout) == NULL)
             goto cmd_err;
         else if (output_cmd && dup2(fileno(outtmpf), STDOUT_FILENO) == -1)
             goto cmd_err;
@@ -395,6 +395,7 @@ void parse_batch(Conf *conf, char *path)
 
         Cmd *cmd = malloc(sizeof(Cmd));
         cmd->input_cmd = cmd->output_cmd = cmd->replace_str = NULL;
+        cmd->quiet = false;
         cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
@@ -407,7 +408,6 @@ void parse_batch(Conf *conf, char *path)
                 cmd->replace_str = argv[j + 1];
                 free(argv[j]);
                 j += 2;
-                continue;
             }
             else if (strcmp(argv[j], "-i") == 0) {
                 if (j + 1 == argc)
@@ -415,7 +415,6 @@ void parse_batch(Conf *conf, char *path)
                 cmd->input_cmd = argv[j + 1];
                 free(argv[j]);
                 j += 2;
-                continue;
             }
             else if (strcmp(argv[j], "-o") == 0) {
                 if (j + 1 == argc)
@@ -423,11 +422,15 @@ void parse_batch(Conf *conf, char *path)
                 cmd->output_cmd = argv[j + 1];
                 free(argv[j]);
                 j += 2;
-                continue;
+            }
+            else if (strcmp(argv[j], "-q") == 0) {
+                cmd->quiet = true;
+                j += 1;
             }
             else if (strlen(argv[j]) > 0 && argv[j][0] == '-')
                 errx(1, "unknown option -- %c", argv[j][0]);
-            break;
+            else
+                break;
         }
         char **new_argv = malloc((argc - j + 1) * sizeof(char *));
         memmove(new_argv, argv + j, (argc - j) * sizeof(char *));
@@ -493,9 +496,9 @@ int main(int argc, char** argv)
     Conf *conf = malloc(sizeof(Conf));
     conf->num_runs = 1;
     conf->format_style = FORMAT_NORMAL;
-    conf->quiet = false;
     conf->sleep = 3;
     
+    bool quiet = false;
     char *batch_file = NULL;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
@@ -536,7 +539,7 @@ int main(int argc, char** argv)
                 output_cmd = optarg;
                 break;
             case 'q':
-                conf->quiet = true;
+                quiet = true;
                 break;
             case 's': {
                 char *ep = optarg + strlen(optarg);
@@ -559,9 +562,9 @@ int main(int argc, char** argv)
 
     if (batch_file && conf->format_style == FORMAT_LIKE_TIME)
         usage(1, "Can't use batch file mode with -f liketime.");
-    if (batch_file && input_cmd)
-        usage(1, "In batch file mode, -I/-i/-o must be specified per-command in the batch file.");
-    if (conf->quiet && output_cmd)
+    if (batch_file && (input_cmd || output_cmd || replace_str || quiet))
+        usage(1, "In batch file mode, -I/-i/-o/-q must be specified per-command in the batch file.");
+    if (quiet && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
     
     // Process the command(s).
@@ -585,6 +588,7 @@ int main(int argc, char** argv)
         cmd->input_cmd = input_cmd;
         cmd->output_cmd = output_cmd;
         cmd->replace_str = replace_str;
+        cmd->quiet = quiet;
         cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
