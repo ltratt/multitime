@@ -45,11 +45,11 @@
 .Sh DESCRIPTION
 Unix's
 .Xr time 1
-utility is a simple and often effective way of measuring how
-long a command takes to run. Unfortunately, running a command once can give
-misleading timings: the process may create a cache on its first execution,
-running faster subsequently; other processes may cause the command to be
-starved of CPU or IO time; etc. It is common to see people run
+utility is a simple and often effective way of measuring how long a command
+takes to execute. Unfortunately, executing a command once can give misleading
+timings: the process may create a cache on its first execution, running
+faster subsequently; other processes may cause the command to be starved of
+CPU or IO time; etc. It is common to see people execute
 .Xr time 1
 several times and take whichever values they feel most comfortable with.
 Inevitably, this causes problems.
@@ -57,7 +57,7 @@ Inevitably, this causes problems.
 .Nm
 is, in essence, a simple extension to
 .Xr time 1
-which runs a command multiple times and prints the timing means, standard
+which executes a command multiple times and prints the timing means, standard
 deviations, mins, medians, and maxes having done so. This can give a much
 better understanding of the command's performance.
 .Nm
@@ -80,7 +80,7 @@ Execute multiple commands from
 .Ar batchfile .
 See the
 .Sx BATCHFILES
-section qfor more details.
+section for more details.
 .It Ic -f Ar liketime | rusage
 The default output style of
 .Nm
@@ -99,7 +99,7 @@ to be used as a drop-in replacement for
 .Xr time 1 .
 .Ic -f
 .Ar rusage
-instead formats the output per the default, but shows the entire output
+instead formats the output as per the default, but shows the entire output
 of the rusage structure.
 .It Ic -I Ar replstr
 Instances of
@@ -112,11 +112,11 @@ are replaced with an integer denoting the current execution run number, from
 .Ar numruns
 (both inclusive).
 .It Ic -i Ar stdincmd
-Before each execution of
+Before the timing of each execution of
 .Ar command ,
 .Ar stdincmd
-is run and its output piped to a temporary file. That temporary file is then
-used as stdin for
+is executed and its output piped to a temporary file. That temporary file is
+then used as stdin for
 .Ar command ,
 allowing the user to ensure that each execution of
 .Ar command
@@ -127,13 +127,13 @@ is a full shell command which is passed to
 .It Ic -n Ar numruns
 Specify how many times
 .Ar command
-should be run. Defaults to 1.
+should be executed. Defaults to 1.
 .It Ic -o Ar stdoutcmd
 When executing
 .Ar command ,
 its output is piped to a temporary file.
 .Ar stdoutcmd
-is then run, with the temporary file being its stdin. If
+is then executed, with the temporary file being its stdin. If
 .Ar stdoutcmd
 returns an exit code (i.e. non-zero),
 .Nm
@@ -173,20 +173,20 @@ Batchfiles are only needed for advanced uses of
 One important use is when
 .Nm
 is being used to compare the performance of multiple commands. The obvious
-way to do this is to run
+way to do this is to execute
 .Nm
 for each command and record its output. However, it is possible that one
 command is unduly affected by issues elsewhere in the machine (e.g. a
 .Xr Cron 8
 job running in the background), distorting the comparison. Batchfiles allow
-multiple completely different commands to be run, with each iteration running
-a random command. Assuming that
+multiple completely different commands to be executed, with each iteration
+running a random command. Assuming that
 .Ar numruns
 is set sufficiently high, batchfiles tend to better spread timing problems
 over the whole set of commands rather than a single command.
 
 The format of batchfiles is relatively simple. Each line specifies a command
-to be run. Each line has the format:
+to be executed. Each line has the format:
 
 .Op Fl I Ar replstr
 .Op Fl i Ar stdincmd
