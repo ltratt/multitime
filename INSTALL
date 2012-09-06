@@ -1,0 +1,17 @@
+================================================================================
+  Installing multitime
+================================================================================
+
+multitime follows standard Unix conventions and should be easily installed on
+most systems.
+
+If building from a packaged release:
+
+  $ ./configure
+  $ make install
+
+If building from a git checkout:
+
+  $ make -f Makefile.bootstrap
+  $ ./configure
+  $ make install
