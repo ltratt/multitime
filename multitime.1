@@ -82,25 +82,19 @@ See the
 .Sx BATCHFILES
 section for more details.
 .It Ic -f Ar liketime | rusage
-The default output style of
+If called as
+.Nm time ,
+the default output style of
 .Nm
-is an incompatible extension of
-.Xr time 1
-that shows means, standard deviations, mins, medians, and maxes. If
+is POSIX.2 compatible, showing means for real, user, and sys readings.
 .Ic -f
 .Ar liketime
-is specified,
-.Nm
-formats it output exactly as
-.Xr time 1
-showing only the means for real, user, and sys readings, allowing
-.Nm
-to be used as a drop-in replacement for
-.Xr time 1 .
+can be used to force POSIX.2 compatibility in all cases. Otherwise, its
+default output style is an incompatible extension that shows means, standard
+deviations, mins, medians, and maxes.
 .Ic -f
 .Ar rusage
-instead formats the output as per the default, but shows the entire output
-of the rusage structure.
+additionally shows the entire output of the rusage structure.
 .It Ic -I Ar replstr
 Instances of
 .Ar replstr
@@ -124,6 +118,12 @@ sees exactly the input on stdin expected.
 .Ar stdincmd
 is a full shell command which is passed to
 .Xr popen 3 .
+.It Ic -l
+Same as
+.Ic -f
+.Ar rusage ,
+for compatibility with
+.Xr time 1 .
 .It Ic -n Ar numruns
 Specify how many times
 .Ar command
@@ -145,6 +145,12 @@ is a full shell command which is passed to
 .Xr popen 3 .
 This option is mutually exclusive with
 .Ic -q .
+.It Ic -p
+Same as
+.Ic -f
+.Ar liketime ,
+for compatibility with
+.Xr time 1 .
 .It Ic -q
 Suppresses stdout output from
 .Ar command .

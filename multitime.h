@@ -19,7 +19,7 @@
 // IN THE SOFTWARE.
 
 
-enum Format_Style {FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAGE};
+enum Format_Style {FORMAT_UNKNOWN, FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAGE};
 
 typedef struct {
     char ** argv;

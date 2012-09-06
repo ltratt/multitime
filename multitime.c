@@ -527,7 +527,7 @@ int main(int argc, char** argv)
 {
     Conf *conf = malloc(sizeof(Conf));
     conf->num_runs = 1;
-    conf->format_style = FORMAT_NORMAL;
+    conf->format_style = FORMAT_UNKNOWN;
     conf->sleep = 3;
     conf->verbosity = 0;
     
@@ -535,7 +535,7 @@ int main(int argc, char** argv)
     char *batch_file = NULL;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "b:f:hi:n:I:o:qs:v")) != -1) {
+    while ((ch = getopt(argc, argv, "b:f:hi:ln:I:o:pqs:v")) != -1) {
         switch (ch) {
             case 'b':
                 batch_file = optarg;
@@ -557,6 +557,9 @@ int main(int argc, char** argv)
             case 'i':
                 input_cmd = optarg;
                 break;
+            case 'l':
+                conf->format_style = FORMAT_RUSAGE;
+                break;
             case 'n':
                 errno = 0;
                 char *ep = optarg + strlen(optarg);
@@ -570,6 +573,9 @@ int main(int argc, char** argv)
                 break;
             case 'o':
                 output_cmd = optarg;
+                break;
+            case 'p':
+                conf->format_style = FORMAT_LIKE_TIME;
                 break;
             case 'q':
                 quiet = true;
@@ -602,6 +608,13 @@ int main(int argc, char** argv)
         usage(1, "In batch file mode, -I/-i/-o/-q must be specified per-command in the batch file.");
     if (quiet && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
+    
+    if (conf->format_style == FORMAT_UNKNOWN) {
+        if (strcmp(__progname, "time") == 0)
+            conf->format_style = FORMAT_LIKE_TIME;
+        else
+            conf->format_style = FORMAT_NORMAL;
+    }
     
     // Process the command(s).
 
@@ -678,15 +691,10 @@ int main(int argc, char** argv)
 	        usleep(RANDN(conf->sleep * 1000000));
     }
     
-    switch (conf->format_style) {
-        case FORMAT_LIKE_TIME:
-            format_like_time(conf);
-            break;
-        case FORMAT_NORMAL:
-        case FORMAT_RUSAGE:
-            format_other(conf);
-            break;
-    }
+    if (conf->format_style == FORMAT_LIKE_TIME)
+        format_like_time(conf);
+    else
+        format_other(conf);
 
     free(conf);
 }
