@@ -254,7 +254,37 @@ An example batch file is as follows:
 .Dl md5 -t
 and may be invoked thus:
 .Dl $ multitime -b bf -n 10
+.Sh LIMITATIONS
+Though
+.Nm
+goes out of its way not to colour timings, ultimately the operating system
+and tasks executing in the system can significantly affect timing
+measurements. For example,
+.Nm
+timings include the time to
+.Xr fork 2
+a process and
+.Xr execvp 3
+a command, which are entirely outside its hands. Short-running tasks can be
+particularly affected by seemingly minor blips in system activity.
 
+There are methods which can increase the likely accuracy of timing measurements. For example, raising
+.Ar numruns
+(and, depending on your circumstances,
+.Ar sleep )
+reduces the likelihood of temporary blips distorting timing measurements. If
+comparing the execution times of multiple, the use of batchfiles can spread
+blips out rather than concentrating them on a single command. Increasing the
+process of priority of
+.Nm
+can decrease the likelihood of other tasks interfering with timings.
+Ultimately, however, there can never be absolute guarantees of accuracy.
+Instead, such methods should be thought of as increasing the likelihood that
+the numbers returned are indicative of the 'true' measurements. By presenting
+means and standard deviations,
+.Nm
+encourages the use of confidence intervals, a statistical technique which
+encourages this mode of thinking.
 .Sh AUTHORS
 .An -nosplit
 .Nm
