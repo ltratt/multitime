@@ -150,12 +150,12 @@ void format_like_time(Conf *conf)
         timeradd(&user, &cmd->rusages[0]->ru_utime, &user);
         timeradd(&sys,  &cmd->rusages[0]->ru_stime, &sys);
     }
-	fprintf(stderr, "real %9ld.%02ld\n",
-      real.tv_sec / conf->num_runs, (real.tv_usec / 10000) / conf->num_runs);
-	fprintf(stderr, "user %9ld.%02ld\n",
-      user.tv_sec / conf->num_runs, (user.tv_usec / 10000) / conf->num_runs);
-	fprintf(stderr, "sys  %9ld.%02ld\n",
-      sys.tv_sec / conf->num_runs,  (sys.tv_usec / 10000) / conf->num_runs);
+	fprintf(stderr, "real %9lld.%02lld\n",
+      (int64_t) (real.tv_sec / conf->num_runs), (int64_t) ((real.tv_usec / 10000) / conf->num_runs));
+	fprintf(stderr, "user %9lld.%02lld\n",
+      (int64_t) (user.tv_sec / conf->num_runs), (int64_t) ((user.tv_usec / 10000) / conf->num_runs));
+	fprintf(stderr, "sys  %9lld.%02lld\n",
+      (int64_t) (sys.tv_sec / conf->num_runs), (int64_t) ((sys.tv_usec / 10000) / conf->num_runs));
 }
 
 
