@@ -305,10 +305,8 @@ void parse_batch(Conf *conf, char *path)
         }
         // Skip comment lines.
         if (bd[i] == '#') {
-            if (bd[i] == '\n')
-                lineno += 1;
             i += 1;
-            while (i < bfsz && (bd[i] != '\n' || bd[i] != '\r'))
+            while (i < bfsz && bd[i] != '\n' && bd[i] != '\r')
                 i += 1;
             if (i == bfsz)
                 break;
