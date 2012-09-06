@@ -69,9 +69,11 @@ by using the
 .Ic -n
 option to specifying how many times
 .Ar command
-should be executed. e.g.:
+should be executed. e.g. if we want to time
+.Xr awk 1 :
 .Pp
-.Dl $ multitime -n 5 md5 -t
+.Dl $ multitime -n 5 awk 'function fib(n) \\\\
+.Dl    { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Pp
 The full set of options is as follows:
 .Bl -tag -width Ds
@@ -213,19 +215,21 @@ A basic invocation of
 .Nm 
 is as follows:
 .Pp
-.Dl $ multitime -n 10 md5 -t
+.Dl $ multitime -n 10 awk 'function fib(n) \\\\
+.Dl    { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Pp
 .Ar command
 will produce its output as normal;
 .Nm
 will then produce output such as the following on stderr:
 .Pp
-.Dl 1: md5 -t
+.Dl 1: awk 'function fib(n) \\
+.Dl { return n <= 1? 1: fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
 .It       Ta  Mean   Ta  Std.Dev. Ta  Min    Ta  Median  Ta  Max
-.It real  Ta  0.222  Ta  0.000    Ta  0.222  Ta  0.222   Ta  0.222       
-.It user  Ta  0.212  Ta  0.004    Ta  0.210  Ta  0.210   Ta  0.220       
-.It sys   Ta  0.002  Ta  0.004    Ta  0.000  Ta  0.000   Ta  0.010
+.It real  Ta  0.474  Ta  0.001    Ta  0.473  Ta  0.474   Ta  0.477
+.It user  Ta  0.456  Ta  0.016    Ta  0.430  Ta  0.460   Ta  0.480       
+.It sys   Ta  0.000  Ta  0.000    Ta  0.000  Ta  0.000   Ta  0.010
 .El
 .Pp
 As an example of more complex uses of
@@ -255,7 +259,9 @@ use
 .Ic -o :
 .Dl $ multitime -I{} -n 3 -o 'cat > file{}' md5 -t
 
-An example batch file is as follows:
+An example batch file
+.Nm bf
+is as follows:
 .Dl -i 'jot -r 100000 1 100000' -q sort
 .Dl md5 -t
 and may be invoked thus:
