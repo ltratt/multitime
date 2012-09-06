@@ -289,8 +289,7 @@ void parse_batch(Conf *conf, char *path)
     int num_cmds = 0;
     Cmd **cmds = malloc(sizeof(Cmd **));
     off_t i = 0;
-    int lineno = 0;
-    char *msg = NULL; // Set to an error message before doing "goto parse_err".
+    int lineno = 1;
     while (i < bfsz) {
         // Skip space at beginning of line.
         while (i < bfsz && (bd[i] == ' ' || bd[i] == '\t'))
@@ -340,10 +339,8 @@ void parse_batch(Conf *conf, char *path)
                 if (qc && bd[j] == qc)
                     break;
                 else if (bd[j] == '\n' || bd[j] == '\r') {
-                    if (qc) {
-                        msg = "Unterminated string";
-                        goto parse_err;
-                    }
+                    if (qc)
+                        errx(1, "Unterminated string at line %d.", lineno);
                     else
                         break;
                 }
@@ -351,10 +348,8 @@ void parse_batch(Conf *conf, char *path)
                     break;
                 }
                 else if (bd[j] == '\\') {
-                    if (j + 1 == bfsz) {
-                        msg = "Escape char not specified";
-                        goto parse_err;
-                    }
+                    if (j + 1 == bfsz)
+                        errx(1, "Escape char not specified line %d.", lineno);
                     argsz += 1;
                     j += 2;
                 }
@@ -363,10 +358,8 @@ void parse_batch(Conf *conf, char *path)
                     j += 1;
                 }
             }
-            if (qc && j == bfsz) {
-                msg = "Unterminated string";
-                goto parse_err;
-            }
+            if (qc && j == bfsz)
+                errx(1, "Unterminated string at line %d.", lineno);
             arg = malloc(argsz + 1);
             if (arg == NULL)
                 errx(1, "Out of memory.");
@@ -415,21 +408,21 @@ void parse_batch(Conf *conf, char *path)
         while (j < argc) {
             if (strcmp(argv[j], "-I") == 0) {
                 if (j + 1 == argc)
-                    errx(1, "option requires an argument -- I");
+                    errx(1, "option requires an argument -- I at line %d", lineno);
                 cmd->replace_str = argv[j + 1];
                 free(argv[j]);
                 j += 2;
             }
             else if (strcmp(argv[j], "-i") == 0) {
                 if (j + 1 == argc)
-                    errx(1, "option requires an argument -- i");
+                    errx(1, "option requires an argument -- i at line %d", lineno);
                 cmd->input_cmd = argv[j + 1];
                 free(argv[j]);
                 j += 2;
             }
             else if (strcmp(argv[j], "-o") == 0) {
                 if (j + 1 == argc)
-                    errx(1, "option requires an argument -- o");
+                    errx(1, "option requires an argument -- o at line %d", lineno);
                 cmd->output_cmd = argv[j + 1];
                 free(argv[j]);
                 j += 2;
@@ -439,7 +432,7 @@ void parse_batch(Conf *conf, char *path)
                 j += 1;
             }
             else if (strlen(argv[j]) > 0 && argv[j][0] == '-')
-                errx(1, "unknown option -- %c", argv[j][0]);
+                errx(1, "unknown option -- %c at line %d", argv[j][0], lineno);
             else
                 break;
         }
@@ -461,9 +454,6 @@ void parse_batch(Conf *conf, char *path)
     conf->num_cmds = num_cmds;
     
     return;
-
-parse_err:
-    errx(1, "%s at line %d.\n", msg, lineno);
 }
 
 
