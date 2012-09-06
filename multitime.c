@@ -268,8 +268,9 @@ char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
 //
 
 //
-// Parse a batch file and update conf accordingly. This is fairly simplistic
-// at the moment, not allowing e.g. breaking of lines with '\'.
+// Parse a batch file and update conf accordingly. This is fairly simplistic,
+// and will probably never match any specific shell but hopefully does a
+// sensible enough job on the expected lowest common denominator.
 //
 
 void parse_batch(Conf *conf, char *path)
@@ -324,6 +325,18 @@ void parse_batch(Conf *conf, char *path)
                 continue;
             }
 
+            // Allow logical lines to split over multiple physical lines.
+            if (bd[i] == '\\' && i + 1 < bfsz
+              && (bd[i + 1] == '\n' || bd[i + 1] == '\r')) {
+                i += 1;
+                while (i < bfsz && (bd[i] == '\n' || bd[i] == '\r')) {
+                    if (bd[i] == '\n')
+                        lineno += 1;
+                    i += 1;
+                }
+                continue;
+            }
+
             char *arg;
             char qc = 0;
             if (bd[i] == '"' || bd[i] == '\'') {
@@ -350,6 +363,14 @@ void parse_batch(Conf *conf, char *path)
                 else if (bd[j] == '\\') {
                     if (j + 1 == bfsz)
                         errx(1, "Escape char not specified line %d.", lineno);
+                    if (bd[j + 1] == '\n' || bd[j + 1] == '\r') {
+                        if (qc) {
+                            errx(1,
+                              "'\' ambiguous before a newline in strings %d.",
+                              lineno);
+                        }
+                        break;
+                    }
                     argsz += 1;
                     j += 2;
                 }
@@ -378,16 +399,23 @@ void parse_batch(Conf *conf, char *path)
                     break;
                 else if (bd[i] == '\\') {
                     assert(i + 1 < bfsz);
+                    if (bd[j + 1] == '\n' || bd[j + 1] == '\r') {
+                        assert(!qc);
+                        break;
+                    }
+                    assert(j < argsz);
                     arg[j] = escape_char(bd[i + 1]);
                     i += 2;
                     j += 1;
                 }
                 else {
+                    assert(j < argsz);
                     arg[j] = bd[i];
                     i += 1;
                     j += 1;
                 }
             }
+            assert(j == argsz);
             arg[j] = 0;
 
             argc += 1;
