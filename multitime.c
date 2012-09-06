@@ -287,7 +287,7 @@ void parse_batch(Conf *conf, char *path)
     fclose(bf);
 
     int num_cmds = 0;
-    Cmd **cmds = malloc(sizeof(Cmd *));
+    Cmd **cmds = malloc(sizeof(Cmd **));
     off_t i = 0;
     int lineno = 0;
     char *msg = NULL; // Set to an error message before doing "goto parse_err".
@@ -600,9 +600,11 @@ int main(int argc, char** argv)
         if (argc == 0)
             usage(1, "Missing command.");
 
+        Cmd *cmd;
+        if ((conf->cmds = malloc(sizeof(Cmd *))) == NULL
+          || (cmd = malloc(sizeof(Cmd))) == NULL)
+            errx(1, "Out of memory.");
         conf->num_cmds = 1;
-        Cmd *cmd = malloc(sizeof(Cmd **));
-        conf->cmds = malloc(sizeof(Cmd *));
         conf->cmds[0] = cmd;
         cmd->argv = argv;
         cmd->input_cmd = input_cmd;
@@ -632,13 +634,13 @@ int main(int argc, char** argv)
 #	endif
 
     for (int i = 0; i < (conf->num_cmds * conf->num_runs); i += 1) {
-        int cmdi;
         // Find a command which has not yet had all its runs executed.
+        Cmd *cmd;
         while (true) {
-            cmdi = RANDN(conf->num_cmds);
+            cmd = conf->cmds[RANDN(conf->num_cmds)];
             int j;
             for (j = 0; j < conf->num_runs; j += 1) {
-                if (conf->cmds[cmdi]->rusages[j] == NULL)
+                if (cmd->rusages[j] == NULL)
                     break;
             }
             if (j < conf->num_runs)
@@ -646,7 +648,6 @@ int main(int argc, char** argv)
         }
 
         // Find a run of cmd which has not yet been executed.
-        Cmd *cmd = conf->cmds[cmdi];
         int runi;
         while (true) {
             runi = RANDN(conf->num_runs);
