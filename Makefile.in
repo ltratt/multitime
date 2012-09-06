@@ -6,10 +6,19 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 INSTALL = @INSTALL@
 
+
 MULTITIME_OBJS = format.o multitime.o
+
 
 multitime: ${MULTITIME_OBJS}
 	${CC} -o multitime ${MULTITIME_OBJS} ${LIBS}
+
+
+install: multitime
+	install -d ${DESTDIR}${bindir}
+	install -c -m 555 multitime ${DESTDIR}${bindir}
+	install -d ${DESTDIR}${prefix}/man/man1
+	install -c -m 444 multitime.1 ${DESTDIR}${prefix}/man/man1/multitime.1
 
 
 clean:
