@@ -447,6 +447,7 @@ void parse_batch(Conf *conf, char *path)
         }
         char **new_argv = malloc((argc - j + 1) * sizeof(char *));
         memmove(new_argv, argv + j, (argc - j) * sizeof(char *));
+        free(argv);
         argc -= j;
         new_argv[argc] = NULL;
         cmd->argv = new_argv;
@@ -457,6 +458,7 @@ void parse_batch(Conf *conf, char *path)
         cmds[num_cmds - 1] = cmd;
     }
     
+    free(bd);
     conf->cmds = cmds;
     conf->num_cmds = num_cmds;
     
