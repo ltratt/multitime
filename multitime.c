@@ -671,4 +671,6 @@ int main(int argc, char** argv)
             format_other(conf);
             break;
     }
+
+    free(conf);
 }
