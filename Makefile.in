@@ -10,6 +10,9 @@ INSTALL = @INSTALL@
 MULTITIME_OBJS = format.o multitime.o
 
 
+all: multitime
+
+
 multitime: ${MULTITIME_OBJS}
 	${CC} -o multitime ${MULTITIME_OBJS} ${LIBS}
 
