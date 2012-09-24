@@ -14,3 +14,7 @@ multitime is, in essence, a simple extension to time which runs a command
 multiple times and prints the timing means, standard deviations, mins,
 medians, and maxes having done so. This can give a much better understanding
 of the command's performance.
+
+More details at:
+
+  http://tratt.net/laurie/src/multitime/
