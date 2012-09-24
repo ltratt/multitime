@@ -133,7 +133,7 @@ should be executed. Defaults to 1.
 .It Ic -o Ar stdoutcmd
 When executing
 .Ar command ,
-its output is piped to a temporary file.
+its output is piped to a temporary file. After execution has finished,
 .Ar stdoutcmd
 is then executed, with the temporary file being its stdin. If
 .Ar stdoutcmd
@@ -157,8 +157,8 @@ for compatibility with
 Suppresses stdout output from
 .Ar command .
 This can be useful for programs which produce voluminous output, which can
-lead to one unintentionally measuring the output speed of the particular
-terminal being used, rather than
+lead to one unintentionally measuring the output speed of the terminal being
+used, rather than
 .Ar command
 itself. This option is mutually exclusive with
 .Ic -o .
@@ -185,7 +185,7 @@ way to do this is to execute
 .Nm
 for each command and record its output. However, it is possible that one
 command is unduly affected by issues elsewhere in the machine (e.g. a
-.Xr Cron 8
+.Xr cron 8
 job running in the background), distorting the comparison. Batchfiles allow
 multiple completely different commands to be executed, with each iteration
 running a random command. Assuming that
@@ -193,8 +193,13 @@ running a random command. Assuming that
 is set sufficiently high, batchfiles tend to better spread timing problems
 over the whole set of commands rather than a single command.
 
-The format of batchfiles is relatively simple. Each line specifies a command
-to be executed. Each line has the format:
+The format of batchfiles is relatively simple being, more or less, a cut-down
+version of the normal
+.Nm
+arguments without having to specify
+.Nm
+itself. Each line specifies a command to be executed. Each line has the
+format:
 
 .Op Fl I Ar replstr
 .Op Fl i Ar stdincmd
@@ -285,9 +290,9 @@ There are methods which can increase the likely accuracy of timing measurements.
 (and, depending on your circumstances,
 .Ar sleep )
 reduces the likelihood of temporary blips distorting timing measurements. If
-comparing the execution times of multiple, the use of batchfiles can spread
-blips out rather than concentrating them on a single command. Increasing the
-process of priority of
+comparing the execution times of multiple commands, the use of batchfiles can
+spread blips out rather than concentrating them on a single command.
+Increasing the process priority of
 .Nm
 can decrease the likelihood of other tasks interfering with timings.
 Ultimately, however, there can never be absolute guarantees of accuracy.
