@@ -37,5 +37,5 @@ distrib:
 	${MAKE} distclean
 	${MAKE} -f Makefile.bootstrap
 	@read v?'multitime version: '; mkdir multitime-$$v; \
-      cp `ls | grep -E -v "(autom4te.cache)|(configure.in)|(Makefile.bootstrap)|(multitime-$$v)"` multitime-$$v; \
+      cp `ls | grep -E -v "(autom4te.cache)|(Makefile.bootstrap)|(multitime-$$v)"` multitime-$$v; \
       tar cfz multitime-$$v.tar.gz multitime-$$v; rm -rf multitime-$$v
