@@ -53,7 +53,7 @@ CPU or IO time; etc. It is common to see people execute
 .Xr time 1
 several times and take whichever values they feel most comfortable with.
 Inevitably, this causes problems.
-
+.Pp
 .Nm
 is, in essence, a simple extension to
 .Xr time 1
@@ -192,7 +192,7 @@ running a random command. Assuming that
 .Ar numruns
 is set sufficiently high, batchfiles tend to better spread timing problems
 over the whole set of commands rather than a single command.
-
+.Pp
 The format of batchfiles is relatively simple being, more or less, a cut-down
 version of the normal
 .Nm
@@ -200,7 +200,7 @@ arguments without having to specify
 .Nm
 itself. Each line specifies a command to be executed. Each line has the
 format:
-
+.Pp
 .Op Fl I Ar replstr
 .Op Fl i Ar stdincmd
 .Op Fl o Ar stdoutcmd
@@ -217,7 +217,7 @@ and
 options are global and can not be specified in the batch file.
 .Sh EXAMPLES
 A basic invocation of
-.Nm 
+.Nm
 is as follows:
 .Pp
 .Dl $ multitime -n 10 awk 'function fib(n) \\\\
@@ -233,7 +233,7 @@ will then produce output such as the following on stderr:
 .Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
 .It       Ta  Mean   Ta  Std.Dev. Ta  Min    Ta  Median  Ta  Max
 .It real  Ta  0.474  Ta  0.001    Ta  0.473  Ta  0.474   Ta  0.477
-.It user  Ta  0.456  Ta  0.016    Ta  0.430  Ta  0.460   Ta  0.480       
+.It user  Ta  0.456  Ta  0.016    Ta  0.430  Ta  0.460   Ta  0.480
 .It sys   Ta  0.000  Ta  0.000    Ta  0.000  Ta  0.000   Ta  0.010
 .El
 .Pp
@@ -252,18 +252,18 @@ If you want each execution to receive the same data, use a two-stage sequence wi
 .Xr cat 1 :
 .Dl $ jot -r 1000000 1 100000 > file
 .Dl $ multitime -i 'cat file' -n 10 -q sort
-
+.Pp
 If you are timing
 .Xr sort 1
 against pre-defined batches of data (called data1, data2, ..., data10):
 .Dl $ multitime -I{} -i 'cat data{}' -n 10 -q sort
-
+.Pp
 If you want to cache the output of each execution of
 .Ar command
 use
 .Ic -o :
 .Dl $ multitime -I{} -n 3 -o 'cat > file{}' md5 -t
-
+.Pp
 An example batch file
 .Nm bf
 is as follows:
@@ -284,7 +284,7 @@ a process and
 .Xr execvp 3
 a command, which are entirely outside its hands. Short-running tasks can be
 particularly affected by seemingly minor blips in system activity.
-
+.Pp
 There are methods which can increase the likely accuracy of timing measurements. For example, raising
 .Ar numruns
 (and, depending on your circumstances,
