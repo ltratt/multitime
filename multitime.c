@@ -535,7 +535,7 @@ int main(int argc, char** argv)
     char *batch_file = NULL;
     char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "b:f:hi:ln:I:o:pqs:v")) != -1) {
+    while ((ch = getopt(argc, argv, "+b:f:hi:ln:I:o:pqs:v")) != -1) {
         switch (ch) {
             case 'b':
                 batch_file = optarg;
