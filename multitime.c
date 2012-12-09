@@ -78,6 +78,12 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
         fprintf(stderr, "\n");
     }
 
+    if (cmd->pre_cmd) {
+        char *pre_cmd = replace(conf, cmd, cmd->pre_cmd, runi);
+        if (system(pre_cmd) != 0)
+            errx(1, "Exiting because '%s' failed.", pre_cmd);
+    }
+
     FILE *tmpf = NULL;
     if (cmd->input_cmd)
         tmpf = read_input(conf, cmd, runi);
@@ -425,7 +431,7 @@ void parse_batch(Conf *conf, char *path)
         }
 
         Cmd *cmd = malloc(sizeof(Cmd));
-        cmd->input_cmd = cmd->output_cmd = cmd->replace_str = NULL;
+        cmd->pre_cmd = cmd->input_cmd = cmd->output_cmd = cmd->replace_str = NULL;
         cmd->quiet = false;
         cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
@@ -457,6 +463,13 @@ void parse_batch(Conf *conf, char *path)
             else if (strcmp(argv[j], "-q") == 0) {
                 cmd->quiet = true;
                 j += 1;
+            }
+            else if (strcmp(argv[j], "-r") == 0) {
+                if (j + 1 == argc)
+                    errx(1, "option requires an argument -- r at line %d", lineno);
+                cmd->pre_cmd = argv[j + 1];
+                free(argv[j]);
+                j += 2;
             }
             else if (strlen(argv[j]) > 0 && argv[j][0] == '-')
                 errx(1, "unknown option -- %c at line %d", argv[j][0], lineno);
@@ -532,9 +545,9 @@ int main(int argc, char** argv)
     
     bool quiet = false;
     char *batch_file = NULL;
-    char *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
+    char *pre_cmd = NULL, *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "+b:f:hi:ln:I:o:pqs:v")) != -1) {
+    while ((ch = getopt(argc, argv, "+b:f:hi:ln:I:o:pqr:s:v")) != -1) {
         switch (ch) {
             case 'b':
                 batch_file = optarg;
@@ -578,6 +591,9 @@ int main(int argc, char** argv)
                 break;
             case 'q':
                 quiet = true;
+                break;
+            case 'r':
+                pre_cmd = optarg;
                 break;
             case 's': {
                 char *ep = optarg + strlen(optarg);
@@ -635,6 +651,7 @@ int main(int argc, char** argv)
         conf->num_cmds = 1;
         conf->cmds[0] = cmd;
         cmd->argv = argv;
+        cmd->pre_cmd = pre_cmd;
         cmd->input_cmd = input_cmd;
         cmd->output_cmd = output_cmd;
         cmd->replace_str = replace_str;

@@ -23,6 +23,7 @@ enum Format_Style {FORMAT_UNKNOWN, FORMAT_LIKE_TIME, FORMAT_NORMAL, FORMAT_RUSAG
 
 typedef struct {
     char ** argv;
+    const char *pre_cmd;
     const char *input_cmd;
     const char *output_cmd;
     const char *replace_str;

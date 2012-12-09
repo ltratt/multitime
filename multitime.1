@@ -31,6 +31,7 @@
 .Op Fl n Ar numruns
 .Op Fl o Ar stdoutcmd
 .Op Fl q
+.Op Fl r Ar precmd
 .Op Fl s Ar sleep
 .Op Fl v
 .Ar command
@@ -102,7 +103,9 @@ Instances of
 .Ar replstr
 found in
 .Ar inputcmd ,
-.Ar outputcmd
+.Ar outputcmd ,
+and
+.Ar precmd
 are replaced with an integer denoting the current execution run number, from
 1 to
 .Ar numruns
@@ -153,6 +156,20 @@ Same as
 .Ar liketime ,
 for compatibility with
 .Xr time 1 .
+.It Ic -r Ar precmd
+Before each execution of
+.Ar command
+-- and, if it is specified, before
+.Ar stdincmd
+--
+.Ar precmd
+is executed by calling
+.Xr system 3 .
+This can be used to set the system to a known good state. If
+.Ar precmd
+returns an exit code (i.e. non-zero),
+.Nm
+stops executing.
 .It Ic -q
 Suppresses stdout output from
 .Ar command .
@@ -205,6 +222,7 @@ format:
 .Op Fl i Ar stdincmd
 .Op Fl o Ar stdoutcmd
 .Op Fl q
+.Op Fl r Ar precmd
 .Ar command
 .Op arg1, ..., argn
 .Pp
