@@ -134,8 +134,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
         FILE *cmdf = popen(output_cmd, "w");
         if (cmdf == NULL || !fcopy(outtmpf, cmdf))
             goto output_cmd_err;
-        int cmdr = pclose(cmdf);
-        if (cmdr != 0)
+        if (pclose(cmdf) != 0)
             errx(1, "Exiting because '%s' failed.", output_cmd);
         fclose(outtmpf);
         free(output_cmd);
