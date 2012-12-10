@@ -58,9 +58,11 @@ Inevitably, this causes problems.
 .Nm
 is, in essence, a simple extension to
 .Xr time 1
-which executes a command multiple times and prints the timing means, standard
-deviations, mins, medians, and maxes having done so. This can give a much
-better understanding of the command's performance.
+which executes
+.Ar command
+multiple times and prints the timing means, standard deviations, mins,
+medians, and maxes having done so. This can give a much better understanding
+of the command's performance.
 .Nm
 also has a number of options to help advanced uses. For basic uses,
 .Nm
@@ -192,6 +194,11 @@ does not sleep at all between executions.
 .It Ic -v
 Causes verbose output (e.g. which commands are being executed).
 .El
+.Pp Note that
+.Nm
+exits immediately if any execution of
+.Ar command
+fails, returning the failed commands error code.
 .Sh BATCHFILES
 Batchfiles are only needed for advanced uses of
 .Nm .

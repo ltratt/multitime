@@ -115,7 +115,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
         else if (output_cmd && dup2(fileno(outtmpf), STDOUT_FILENO) == -1)
             goto cmd_err;
         execvp(cmd->argv[0], cmd->argv);
-        goto cmd_err;
+        exit(1);
     }
 
     // Parent
@@ -124,6 +124,9 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     wait4(pid, &status, 0, ru);
     struct timeval endt;
     gettimeofday(&endt, NULL);
+    
+    if (status != 0)
+        exit(status);
 
     if (tmpf)
         fclose(tmpf);
