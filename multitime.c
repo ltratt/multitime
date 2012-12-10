@@ -471,8 +471,12 @@ void parse_batch(Conf *conf, char *path)
                 free(argv[j]);
                 j += 2;
             }
-            else if (strlen(argv[j]) > 0 && argv[j][0] == '-')
-                errx(1, "unknown option -- %c at line %d", argv[j][0], lineno);
+            else if (strlen(argv[j]) > 0 && argv[j][0] == '-') {
+                if (strlen(argv[j]) == 1)
+                    errx(1, "option name not given -- at line %d", lineno);
+                else
+                    errx(1, "unknown option -- %c at line %d", argv[j][1], lineno);
+            }
             else
                 break;
         }
