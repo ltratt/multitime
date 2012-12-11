@@ -35,6 +35,9 @@ extern char* __progname;
 
 #define TIMEVAL_TO_DOUBLE(t) \
   ((double) (t)->tv_sec + (double) (t)->tv_usec / 1000000)
+  
+void pp_cmd(Conf *, Cmd *);
+void pp_arg(const char *);
 
 
 
@@ -44,22 +47,55 @@ void pp_cmd(Conf *conf, Cmd *cmd)
     // escaping strings, but it's never going to be perfect, as the rules
     // are somewhat shell dependent.
 
+    if (cmd->replace_str) {
+        fprintf(stderr, "-I ");
+        pp_arg(cmd->replace_str);
+        fprintf(stderr, " ");
+    }
+
+    if (cmd->input_cmd) {
+        fprintf(stderr, "-i ");
+        pp_arg(cmd->input_cmd);
+        fprintf(stderr, " ");
+    }
+
+    if (cmd->pre_cmd) {
+        fprintf(stderr, "-r ");
+        pp_arg(cmd->pre_cmd);
+        fprintf(stderr, " ");
+    }
+
+    if (cmd->output_cmd) {
+        fprintf(stderr, "-o ");
+        pp_arg(cmd->output_cmd);
+        fprintf(stderr, " ");
+    }
+
+    if (cmd->quiet)
+        fprintf(stderr, "-q ");
+
     for (int i = 0; cmd->argv[i] != NULL; i += 1) {
         if (i > 0)
             fprintf(stderr, " ");
-        char *arg = cmd->argv[i];
-        if (strchr(arg, ' ') == NULL)
-            fprintf(stderr, "%s", cmd->argv[i]);
-        else {
-            fprintf(stderr, "\"");
-            for (int k = 0; k < strlen(arg); k += 1) {
-                if (arg[k] == '\"')
-                    fprintf(stderr, "\\\"");
-                else
-                    fprintf(stderr, "%c", arg[k]);
-            }
-            fprintf(stderr, "\"");
+        pp_arg(cmd->argv[i]);
+    }
+}
+
+
+
+void pp_arg(const char *s)
+{
+    if (strchr(s, ' ') == NULL)
+        fprintf(stderr, "%s", s);
+    else {
+        fprintf(stderr, "\"");
+        for (int k = 0; k < strlen(s); k += 1) {
+            if (s[k] == '\"')
+                fprintf(stderr, "\\\"");
+            else
+                fprintf(stderr, "%c", s[k]);
         }
+        fprintf(stderr, "\"");
     }
 }
 
