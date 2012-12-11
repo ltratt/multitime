@@ -93,7 +93,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     if (output_cmd) {
         outtmpf = tmpfile();
         if (!outtmpf)
-            goto cmd_err;
+            errx(1, "Can't create temporary file.");
     }
 
     struct rusage *ru = cmd->rusages[runi] =
@@ -106,14 +106,15 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     gettimeofday(&startt, NULL);
     pid_t pid = fork();
     if (pid == 0) {
-        // Child
+        // Child. Note we don't deal with errors directly here, but simply report
+        // them back to the parent, which will then exit.
         if (tmpf && dup2(fileno(tmpf), STDIN_FILENO) == -1)
-            goto cmd_err;
+            exit(1);
 
         if (cmd->quiet && freopen("/dev/null", "w", stdout) == NULL)
-            goto cmd_err;
+            exit(1);
         else if (output_cmd && dup2(fileno(outtmpf), STDOUT_FILENO) == -1)
-            goto cmd_err;
+            exit(1);
         execvp(cmd->argv[0], cmd->argv);
         exit(1);
     }
@@ -126,7 +127,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     gettimeofday(&endt, NULL);
     
     if (status != 0)
-        exit(status);
+        errx(status, "Error when attempting to run %s", cmd->argv[0]);
 
     if (tmpf)
         fclose(tmpf);
@@ -142,7 +143,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
         fseek(outtmpf, 0, SEEK_SET);
         FILE *cmdf = popen(output_cmd, "w");
         if (cmdf == NULL || !fcopy(outtmpf, cmdf))
-            goto output_cmd_err;
+            errx(1, "Error when attempting to run %s", output_cmd);
         if (pclose(cmdf) != 0)
             errx(1, "Exiting because '%s' failed.", output_cmd);
         fclose(outtmpf);
@@ -150,12 +151,6 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     }
 
     return;
-
-cmd_err:
-    err(1, "Error when attempting to run %s", cmd->argv[0]);
-
-output_cmd_err:
-    err(1, "Error when attempting to run %s", output_cmd);
 }
 
 
