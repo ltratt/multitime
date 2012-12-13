@@ -47,10 +47,12 @@
 Unix's
 .Xr time 1
 utility is a simple and often effective way of measuring how long a command
-takes to execute. Unfortunately, executing a command once can give misleading
-timings: the process may create a cache on its first execution, running
-faster subsequently; other processes may cause the command to be starved of
-CPU or IO time; etc. It is common to see people execute
+takes to execute.
+Unfortunately, executing a command once can give misleading timings: the
+process may create a cache on its first execution, running faster
+subsequently; other processes may cause the command to be starved of CPU or
+IO time; etc.
+It is common to see people execute
 .Xr time 1
 several times and take whichever values they feel most comfortable with.
 Inevitably, this causes problems.
@@ -61,10 +63,11 @@ is, in essence, a simple extension to
 which executes
 .Ar command
 multiple times and prints the timing means, standard deviations, mins,
-medians, and maxes having done so. This can give a much better understanding
-of the command's performance.
+medians, and maxes having done so.
+This can give a much better understanding of the command's performance.
 .Nm
-also has a number of options to help advanced uses. For basic uses,
+also has a number of options to help advanced uses.
+For basic uses,
 .Nm
 can replace
 .Xr time 1
@@ -72,7 +75,8 @@ by using the
 .Ic -n
 option to specifying how many times
 .Ar command
-should be executed. e.g. if we want to time
+should be executed.
+e.g. if we want to time
 .Xr awk 1 :
 .Pp
 .Dl $ multitime -n 5 awk 'function fib(n) \\\\
@@ -94,9 +98,9 @@ the default output style of
 is POSIX.2 compatible, showing means for real, user, and sys readings.
 .Ic -f
 .Ar liketime
-can be used to force POSIX.2 compatibility in all cases. Otherwise, its
-default output style is an incompatible extension that shows means, standard
-deviations, mins, medians, and maxes.
+can be used to force POSIX.2 compatibility in all cases.
+Otherwise, its default output style is an incompatible extension that shows
+means, standard deviations, mins, medians, and maxes.
 .Ic -f
 .Ar rusage
 additionally shows the entire output of the rusage structure.
@@ -116,8 +120,8 @@ are replaced with an integer denoting the current execution run number, from
 Before the timing of each execution of
 .Ar command ,
 .Ar stdincmd
-is executed and its output piped to a temporary file. That temporary file is
-then used as stdin for
+is executed and its output piped to a temporary file.
+That temporary file is then used as stdin for
 .Ar command ,
 allowing the user to ensure that each execution of
 .Ar command
@@ -134,17 +138,21 @@ for compatibility with
 .It Ic -n Ar numruns
 Specify how many times
 .Ar command
-should be executed. Defaults to 1.
+should be executed.
+Defaults to 1.
 .It Ic -o Ar stdoutcmd
 When executing
 .Ar command ,
-its output is piped to a temporary file. After execution has finished,
+its output is piped to a temporary file.
+After execution has finished,
 .Ar stdoutcmd
-is then executed, with the temporary file being its stdin. If
+is then executed, with the temporary file being its stdin.
+If
 .Ar stdoutcmd
 returns an exit code (i.e. non-zero),
 .Nm
-stops executing. This can be used as a sanity check that
+stops executing.
+This can be used as a sanity check that
 .Ar command
 is executing as per expectations.
 .Ar stdoutcmd
@@ -167,7 +175,8 @@ Before each execution of
 .Ar precmd
 is executed by calling
 .Xr system 3 .
-This can be used to set the system to a known good state. If
+This can be used to set the system to a known good state.
+If
 .Ar precmd
 returns an exit code (i.e. non-zero),
 .Nm
@@ -179,14 +188,17 @@ This can be useful for programs which produce voluminous output, which can
 lead to one unintentionally measuring the output speed of the terminal being
 used, rather than
 .Ar command
-itself. This option is mutually exclusive with
+itself.
+This option is mutually exclusive with
 .Ic -o .
 .It Ic -s Ar sleep
 .Nm
 pauses a random length of time between 0 and
 .Ar sleep
-seconds between each command execution. Particularly for short-running commands,
-this can smooth out temporary peaks and troughs. If not specified,
+seconds between each command execution.
+Particularly for short-running commands, this can smooth out temporary peaks
+and troughs.
+If not specified,
 .Ar sleep
 defaults to 3 seconds; if set to 0,
 .Nm
@@ -204,15 +216,17 @@ Batchfiles are only needed for advanced uses of
 .Nm .
 One important use is when
 .Nm
-is being used to compare the performance of multiple commands. The obvious
-way to do this is to execute
+is being used to compare the performance of multiple commands.
+The obvious way to do this is to execute
 .Nm
-for each command and record its output. However, it is possible that one
-command is unduly affected by issues elsewhere in the machine (e.g. a
+for each command and record its output.
+However, it is possible that one command is unduly affected by issues
+elsewhere in the machine (e.g. a
 .Xr cron 8
-job running in the background), distorting the comparison. Batchfiles allow
-multiple completely different commands to be executed, with each iteration
-running a random command. Assuming that
+job running in the background), distorting the comparison.
+Batchfiles allow multiple completely different commands to be executed, with
+each iteration running a random command.
+Assuming that
 .Ar numruns
 is set sufficiently high, batchfiles tend to better spread timing problems
 over the whole set of commands rather than a single command.
@@ -222,7 +236,8 @@ version of the normal
 .Nm
 arguments without having to specify
 .Nm
-itself. Each line specifies a command to be executed. Each line has the
+itself.
+Each line specifies a command to be executed. Each line has the
 format:
 .Pp
 .Op Fl I Ar replstr
@@ -301,29 +316,32 @@ Though
 .Nm
 goes out of its way not to colour timings, ultimately the operating system
 and tasks executing in the system can significantly affect timing
-measurements. For example,
+measurements.
+For example,
 .Nm
 timings include the time to
 .Xr fork 2
 a process and
 .Xr execvp 3
-a command, which are entirely outside its hands. Short-running tasks can be
+a command, which are entirely outside its hands.
+Short-running tasks can be
 particularly affected by seemingly minor blips in system activity.
 .Pp
-There are methods which can increase the likely accuracy of timing measurements. For example, raising
+There are methods which can increase the likely accuracy of timing measurements.
+For example, raising
 .Ar numruns
 (and, depending on your circumstances,
 .Ar sleep )
-reduces the likelihood of temporary blips distorting timing measurements. If
-comparing the execution times of multiple commands, the use of batchfiles can
-spread blips out rather than concentrating them on a single command.
+reduces the likelihood of temporary blips distorting timing measurements.
+If comparing the execution times of multiple commands, the use of batchfiles
+can spread blips out rather than concentrating them on a single command.
 Increasing the process priority of
 .Nm
 can decrease the likelihood of other tasks interfering with timings.
 Ultimately, however, there can never be absolute guarantees of accuracy.
 Instead, such methods should be thought of as increasing the likelihood that
-the numbers returned are indicative of the 'true' measurements. By presenting
-means and standard deviations,
+the numbers returned are indicative of the 'true' measurements.
+By presenting means and standard deviations,
 .Nm
 encourages the use of confidence intervals, a statistical technique which
 encourages this mode of thinking.
