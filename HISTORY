@@ -2,6 +2,17 @@
   multitime history
 ============================================================================
 
+  multitime 1.2 (2012/12/13)
+
+* Add the "-r" switch to allow each execution of a command to set the system
+  to a known good state.
+
+* Be consistent in the way errors from a child process cause multitime to
+  exit.
+
+* More sensible pretty-printing of the commands being executed.
+
+
   multitime 1.1 (2012/10/23)
 
 * Ensure that command-line parameters are parsed correctly with GNU libc.
