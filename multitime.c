@@ -291,7 +291,7 @@ void parse_batch(Conf *conf, char *path)
     fclose(bf);
 
     int num_cmds = 0;
-    Cmd **cmds = malloc(sizeof(Cmd **));
+    Cmd **cmds = malloc(sizeof(Cmd *));
     off_t i = 0;
     int lineno = 1;
     while (i < bfsz) {
