@@ -56,7 +56,9 @@ bool fcopy(FILE *, FILE *);
 char *replace(Conf *, Cmd *, const char *, int);
 char escape_char(char);
 
-#ifdef MT_HAVE_RANDOM
+#if defined(MT_HAVE_ARC4RANDOM)
+#define RANDN(n) (arc4random() % n)
+#elif defined(MT_HAVE_RANDOM)
 #define RANDN(n) (random() % n)
 #else
 #define RANDN(n) (rand() % n)
@@ -666,7 +668,9 @@ int main(int argc, char** argv)
 
     // Seed the random number generator.
 
-#	if defined(MT_HAVE_RANDOM) && defined(MT_HAVE_SRANDOMDEV)
+#   if defined(MT_HAVE_ARC4RANDOM)
+    // arc4random doesn't need to be seeded
+#	elif defined(MT_HAVE_RANDOM) && defined(MT_HAVE_SRANDOMDEV)
 	srandomdev();
 #	elif defined(MT_HAVE_RANDOM)
 	struct timeval tv;

@@ -56,6 +56,15 @@ case `uname -s` in
 esac
 
 
+# arc4random
+
+AH_TEMPLATE(MT_HAVE_ARC4RANDOM,
+  [Define if your platform has the arc4random function family.])
+
+AC_CHECK_FUNC(arc4random, [AC_DEFINE(MT_HAVE_ARC4RANDOM)])
+
+
+
 # random
 
 AH_TEMPLATE(MT_HAVE_RANDOM,
