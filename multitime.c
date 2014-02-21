@@ -84,6 +84,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
         char *pre_cmd = replace(conf, cmd, cmd->pre_cmd, runi);
         if (system(pre_cmd) != 0)
             errx(1, "Exiting because '%s' failed.", pre_cmd);
+        free(pre_cmd);
     }
 
     FILE *tmpf = NULL;
