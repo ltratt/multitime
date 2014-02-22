@@ -95,6 +95,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     char *output_cmd = replace(conf, cmd, cmd->output_cmd, runi);
     if (output_cmd) {
         char outtmpp[] = "/tmp/mt.XXXXXXXXXX";
+        umask(S_IRWXG | S_IRWXO | S_IXUSR);
         int outtmpfd = mkstemp(outtmpp);
         if (outtmpfd != -1)
             outtmpf = fdopen(outtmpfd, "r+");
@@ -175,6 +176,7 @@ FILE *read_input(Conf *conf, Cmd *cmd, int runi)
     if (!cmdf)
         goto cmd_err;
     char tmpp[] = "/tmp/mt.XXXXXXXXXX";
+    umask(S_IRWXG | S_IRWXO | S_IXUSR);
     int tmpfd = mkstemp(tmpp);
     if (tmpfd == -1)
         goto cmd_err;
