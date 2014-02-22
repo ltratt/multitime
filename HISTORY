@@ -2,7 +2,12 @@
   multitime history
 ============================================================================
 
-  multitime 1.2 (2012/12/13)
+  multitime 1.3 (2014-02-22)
+
+* Minor bug fixes (including one memory leak).
+
+
+  multitime 1.2 (2012-12-13)
 
 * Add the "-r" switch to allow each execution of a command to set the system
   to a known good state.
@@ -13,11 +18,11 @@
 * More sensible pretty-printing of the commands being executed.
 
 
-  multitime 1.1 (2012/10/23)
+  multitime 1.1 (2012-10-23)
 
 * Ensure that command-line parameters are parsed correctly with GNU libc.
 
 
-  multitime 1.0 (2012/09/24)
+  multitime 1.0 (2012-09-24)
   
 * First public release.
