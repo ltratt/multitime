@@ -79,7 +79,7 @@ should be executed.
 e.g. if we want to time
 .Xr awk 1 :
 .Pp
-.Dl $ multitime -n 5 awk 'function fib(n) \\\\
+.Dl $ multitime -n 5 awk 'function fib(n) \e
 .Dl    { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Pp
 The full set of options is as follows:
@@ -261,7 +261,7 @@ A basic invocation of
 .Nm
 is as follows:
 .Pp
-.Dl $ multitime -n 10 awk 'function fib(n) \\\\
+.Dl $ multitime -n 10 awk 'function fib(n) \e
 .Dl    { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Pp
 .Ar command
@@ -269,7 +269,7 @@ will produce its output as normal;
 .Nm
 will then produce output such as the following on stderr:
 .Pp
-.Dl 1: awk 'function fib(n) \\
+.Dl 1: awk 'function fib(n) \e
 .Dl { return n <= 1? 1: fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
 .It       Ta  Mean   Ta  Std.Dev. Ta  Min    Ta  Median  Ta  Max
