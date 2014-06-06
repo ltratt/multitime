@@ -27,7 +27,8 @@ typedef struct {
     const char *input_cmd;
     const char *output_cmd;
     const char *replace_str;
-    bool quiet;                // True = suppress command's stdout.
+    bool quiet_stdout;         // True = suppress command's stdout.
+    bool quiet_stderr;         // True = suppress command's stderr.
     struct timeval **timevals; // The wall clock time for each command run.
     struct rusage **rusages;   // The rusage each command run.
 } Cmd;
