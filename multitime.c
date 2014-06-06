@@ -118,7 +118,9 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
         if (tmpf && dup2(fileno(tmpf), STDIN_FILENO) == -1)
             exit(1);
 
-        if (cmd->quiet && freopen("/dev/null", "w", stdout) == NULL)
+        if (cmd->quiet_stdout && freopen("/dev/null", "w", stdout) == NULL)
+            exit(1);
+        if (cmd->quiet_stderr && freopen("/dev/null", "w", stderr) == NULL)
             exit(1);
         else if (output_cmd && dup2(fileno(outtmpf), STDOUT_FILENO) == -1)
             exit(1);
@@ -444,7 +446,7 @@ void parse_batch(Conf *conf, char *path)
 
         Cmd *cmd = malloc(sizeof(Cmd));
         cmd->pre_cmd = cmd->input_cmd = cmd->output_cmd = cmd->replace_str = NULL;
-        cmd->quiet = false;
+        cmd->quiet_stdout = cmd->quiet_stderr = false;
         cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
@@ -473,7 +475,10 @@ void parse_batch(Conf *conf, char *path)
                 j += 2;
             }
             else if (strcmp(argv[j], "-q") == 0) {
-                cmd->quiet = true;
+                if (cmd->quiet_stdout)
+                    cmd->quiet_stderr = true;
+                else
+                    cmd->quiet_stdout = true;
                 j += 1;
             }
             else if (strcmp(argv[j], "-r") == 0) {
@@ -559,7 +564,7 @@ int main(int argc, char** argv)
     conf->sleep = 3;
     conf->verbosity = 0;
     
-    bool quiet = false;
+    bool quiet_stdout = false, quiet_stderr = false;
     char *batch_file = NULL;
     char *pre_cmd = NULL, *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
@@ -606,7 +611,10 @@ int main(int argc, char** argv)
                 conf->format_style = FORMAT_LIKE_TIME;
                 break;
             case 'q':
-                quiet = true;
+                if (quiet_stdout)
+                    quiet_stderr = true;
+                else
+                    quiet_stdout = true;
                 break;
             case 'r':
                 pre_cmd = optarg;
@@ -635,9 +643,9 @@ int main(int argc, char** argv)
 
     if (batch_file && conf->format_style == FORMAT_LIKE_TIME)
         usage(1, "Can't use batch file mode with -f liketime.");
-    if (batch_file && (input_cmd || output_cmd || replace_str || quiet))
+    if (batch_file && (input_cmd || output_cmd || replace_str || quiet_stdout))
         usage(1, "In batch file mode, -I/-i/-o/-q must be specified per-command in the batch file.");
-    if (quiet && output_cmd)
+    if (quiet_stdout && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
     
     if (conf->format_style == FORMAT_UNKNOWN) {
@@ -671,7 +679,8 @@ int main(int argc, char** argv)
         cmd->input_cmd = input_cmd;
         cmd->output_cmd = output_cmd;
         cmd->replace_str = replace_str;
-        cmd->quiet = quiet;
+        cmd->quiet_stdout = quiet_stdout;
+        cmd->quiet_stderr = quiet_stderr;
         cmd->rusages = malloc(sizeof(struct rusage *) * conf->num_runs);
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);

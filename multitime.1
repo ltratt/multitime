@@ -182,11 +182,13 @@ returns an exit code (i.e. non-zero),
 .Nm
 stops executing.
 .It Ic -q
-Suppresses stdout output from
-.Ar command .
-This can be useful for programs which produce voluminous output, which can
-lead to one unintentionally measuring the output speed of the terminal being
-used, rather than
+If specified once,
+.Ic -q
+suppresses stdout output; if specified twice,
+.Ic -qq
+suppresses both stdout and stderr. This can be useful for programs which produce
+voluminous output, which can lead to one unintentionally measuring the output
+speed of the terminal being used, rather than
 .Ar command
 itself.
 This option is mutually exclusive with
