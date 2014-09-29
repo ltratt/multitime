@@ -71,7 +71,9 @@ void pp_cmd(Conf *conf, Cmd *cmd)
         fprintf(stderr, " ");
     }
 
-    if (cmd->quiet)
+    if (cmd->quiet_stderr)
+        fprintf(stderr, "-qq ");
+    else if (cmd->quiet_stdout)
         fprintf(stderr, "-q ");
 
     for (int i = 0; cmd->argv[i] != NULL; i += 1) {
