@@ -33,6 +33,7 @@
 .Op Fl q
 .Op Fl r Ar precmd
 .Op Fl s Ar sleep
+.Op Fl c Ar 90 | 95 | 99
 .Op Fl v
 .Ar command
 .Op arg1, ..., argn
@@ -205,6 +206,9 @@ If not specified,
 defaults to 3 seconds; if set to 0,
 .Nm
 does not sleep at all between executions.
+.It Ic -c Ar 90 | 95 | 99
+Controls the level of confidence in the reported confidence intervals.
+For example, a value of 90 will result in a 90% confidence interval being calculated.
 .It Ic -v
 Causes verbose output (e.g. which commands are being executed).
 .El
@@ -274,10 +278,10 @@ will then produce output such as the following on stderr:
 .Dl 1: awk 'function fib(n) \e
 .Dl { return n <= 1? 1: fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
-.It       Ta  Mean   Ta  Std.Dev. Ta  Min    Ta  Median  Ta  Max
-.It real  Ta  0.474  Ta  0.001    Ta  0.473  Ta  0.474   Ta  0.477
-.It user  Ta  0.456  Ta  0.016    Ta  0.430  Ta  0.460   Ta  0.480
-.It sys   Ta  0.000  Ta  0.000    Ta  0.000  Ta  0.000   Ta  0.010
+.It       Ta  Mean Ta Ta  Std.Dev. Min    Ta  Median  Ta  Max
+.It real  Ta  0.474+/-0.000012  Ta    0.001         Ta  0.473  Ta  0.474   Ta  0.477
+.It user  Ta  0.456+/-0.000474  Ta    0.016         Ta  0.430  Ta  0.460   Ta  0.480
+.It sys   Ta  0.000+/-0.000002  Ta    0.000         Ta  0.000  Ta  0.000   Ta  0.010
 .El
 .Pp
 As an example of more complex uses of
