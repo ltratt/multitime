@@ -129,12 +129,12 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
     }
 
     // Parent
-    
+
     int status;
     wait4(pid, &status, 0, ru);
     struct timeval endt;
     gettimeofday(&endt, NULL);
-    
+
     if (status != 0)
         errx(status, "Error when attempting to run %s", cmd->argv[0]);
 
@@ -185,13 +185,13 @@ FILE *read_input(Conf *conf, Cmd *cmd, int runi)
     FILE *tmpf = fdopen(tmpfd, "r+");
     if (!tmpf)
         goto cmd_err;
-    
+
     fcopy(cmdf, tmpf);
     if (pclose(cmdf) != 0)
         goto cmd_err;
     free(input_cmd);
     fseek(tmpf, 0, SEEK_SET);
-    
+
     return tmpf;
 
 cmd_err:
@@ -276,7 +276,7 @@ char *replace(Conf *conf, Cmd *cmd, const char *s, int runi)
             f = fn + strlen(cmd->replace_str);
         }
     }
-    
+
     return rtn;
 }
 
@@ -451,7 +451,7 @@ void parse_batch(Conf *conf, char *path)
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
         memset(cmd->timevals, 0, sizeof(struct rusage *) * conf->num_runs);
-        int j = 0;
+        int j = 0, confidence = 0;
         while (j < argc) {
             if (strcmp(argv[j], "-I") == 0) {
                 if (j + 1 == argc)
@@ -481,6 +481,14 @@ void parse_batch(Conf *conf, char *path)
                     cmd->quiet_stdout = true;
                 j += 1;
             }
+            else if (strcmp(argv[j], "-c") == 0) {
+                if (j + 1 == argc)
+                    errx(1, "option requires an argument -- c at line %d", lineno);
+                confidence = atoi(argv[j + 1]);
+                conf->conf_level = confidence;
+                free(argv[j]);
+                j += 2;
+            }
             else if (strcmp(argv[j], "-r") == 0) {
                 if (j + 1 == argc)
                     errx(1, "option requires an argument -- r at line %d", lineno);
@@ -509,11 +517,11 @@ void parse_batch(Conf *conf, char *path)
             errx(1, "Out of memory.");
         cmds[num_cmds - 1] = cmd;
     }
-    
+
     free(bd);
     conf->cmds = cmds;
     conf->num_cmds = num_cmds;
-    
+
     return;
 }
 
@@ -548,7 +556,7 @@ void usage(int rtn_code, char *msg)
         fprintf(stderr, "%s\n", msg);
     fprintf(stderr, "Usage:\n  %s [-f <liketime|rusage>] [-I <replstr>] "
       "[-i <stdincmd>]\n    [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>] "
-      "<command>\n    [<arg 1> ... <arg n>]\n"
+      "[-c <level>] <command>\n    [<arg 1> ... <arg n>]\n"
       "  %s -b <file> [-f <rusage>] [-q] [-s <sleep>] "
       "[-n <numruns>]\n", __progname, __progname);
     exit(rtn_code);
@@ -563,12 +571,12 @@ int main(int argc, char** argv)
     conf->format_style = FORMAT_UNKNOWN;
     conf->sleep = 3;
     conf->verbosity = 0;
-    
+
     bool quiet_stdout = false, quiet_stderr = false;
     char *batch_file = NULL;
     char *pre_cmd = NULL, *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "+b:f:hi:ln:I:o:pqr:s:v")) != -1) {
+    while ((ch = getopt(argc, argv, "+b:f:hi:ln:I:o:pqr:s:c:v")) != -1) {
         switch (ch) {
             case 'b':
                 batch_file = optarg;
@@ -630,6 +638,17 @@ int main(int argc, char** argv)
                 conf->sleep = (int) lval;
                 break;
             }
+            case 'c': {
+                char *ep = optarg + strlen(optarg);
+                long lval = (int)strtoimax(optarg, &ep, 10);
+                if (optarg[0] == '\0' || *ep != '\0')
+                    usage(1, "'level' not a valid number.");
+                if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
+                  || lval < 1 || lval > 99)
+                    usage(1, "'level' out of range.");
+                conf->conf_level = (int) lval;
+                break;
+            }
             case 'v':
                 conf->verbosity += 1;
                 break;
@@ -647,14 +666,14 @@ int main(int argc, char** argv)
         usage(1, "In batch file mode, -I/-i/-o/-q must be specified per-command in the batch file.");
     if (quiet_stdout && output_cmd)
         usage(1, "-q and -o are mutually exclusive.");
-    
+
     if (conf->format_style == FORMAT_UNKNOWN) {
         if (strcmp(__progname, "time") == 0)
             conf->format_style = FORMAT_LIKE_TIME;
         else
             conf->format_style = FORMAT_NORMAL;
     }
-    
+
     // Process the command(s).
 
     if (batch_file) {
@@ -733,7 +752,7 @@ int main(int argc, char** argv)
         if (i + 1 < conf->num_runs && conf->sleep > 0)
 	        usleep(RANDN(conf->sleep * 1000000));
     }
-    
+
     if (conf->format_style == FORMAT_LIKE_TIME)
         format_like_time(conf);
     else

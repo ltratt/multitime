@@ -37,6 +37,7 @@ typedef struct {
     Cmd **cmds;
     int num_cmds;               // How many commands the user has specified.
     int num_runs;               // How many times to run each command.
+    int conf_level;             // Confidence level (as a percentage, e.g. 95).
 
     enum Format_Style format_style;
     int sleep;                  // Time to sleep between commands, in seconds.

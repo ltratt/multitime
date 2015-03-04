@@ -29,13 +29,14 @@
 #include <sys/time.h>
 
 #include "multitime.h"
-
+#include "tvals.h"
+#include "zvals.h"
 
 extern char* __progname;
 
 #define TIMEVAL_TO_DOUBLE(t) \
   ((double) (t)->tv_sec + (double) (t)->tv_usec / 1000000)
-  
+
 void pp_cmd(Conf *, Cmd *);
 void pp_arg(const char *);
 
@@ -200,9 +201,17 @@ void format_like_time(Conf *conf)
 
 void format_other(Conf *conf)
 {
+    double z_t = .0; // Z or t-value used to calculate confidence interval.
     fprintf(stderr, "===> %s results\n", __progname);
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
+
+        if (conf->num_runs < 30) { // Use t-value.
+            z_t = tvals[conf->conf_level - 1][conf->num_runs - 1];
+        }
+        else { // num_runs over 30, use Z value.
+            z_t = zvals[conf->conf_level - 1];
+        }
 
         if (i > 0)
             fprintf(stderr, "\n");
@@ -210,7 +219,7 @@ void format_other(Conf *conf)
         pp_cmd(conf, cmd);
         fprintf(stderr, "\n");
         fprintf(stderr,
-          "            Mean        Std.Dev.    Min         Median      Max\n");
+          "            Mean                Std.Dev.    Min         Median      Max\n");
 
         // Means
 
@@ -241,6 +250,13 @@ void format_other(Conf *conf)
             sys_stddev    +=
               pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime) - mean_sys,  2);
         }
+
+        // Confidence intervals (without means)
+
+        double real_ci = .0, user_ci = .0, sys_ci = .0;
+        real_ci = ((z_t * real_stddev) / sqrt(conf->num_runs));
+        user_ci = ((z_t * user_stddev) / sqrt(conf->num_runs));
+        sys_ci = ((z_t * sys_stddev) / sqrt(conf->num_runs));
 
         // Mins and maxes
 
@@ -283,7 +299,7 @@ void format_other(Conf *conf)
             md_user = TIMEVAL_TO_DOUBLE(&cmd->rusages[mdl]->ru_utime);
 
         double min_sys, max_sys, md_sys;
-        qsort(cmd->rusages,  conf->num_runs, 
+        qsort(cmd->rusages,  conf->num_runs,
           sizeof(struct rusage *), cmp_rusage_stime);
         min_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[0]->ru_stime);
         max_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[conf->num_runs - 1]->ru_stime);
@@ -298,25 +314,27 @@ void format_other(Conf *conf)
 
         // Print everything out
 
-	    fprintf(stderr, "real        %-12.3f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+      fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_real,
+          real_ci,
           sqrt(real_stddev / conf->num_runs),
           min_real,
           md_real,
           max_real);
-	    fprintf(stderr, "user        %-12.3f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+      fprintf(stderr, "user        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_user,
+          user_ci,
           sqrt(user_stddev / conf->num_runs),
           min_user,
           md_user,
           max_user);
-	    fprintf(stderr, "sys         %-12.3f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+      fprintf(stderr, "sys         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_sys,
+          sys_ci,
           sqrt(sys_stddev / conf->num_runs),
           min_sys,
           md_sys,
           max_sys);
-
         if (conf->format_style == FORMAT_NORMAL)
             continue;
 
