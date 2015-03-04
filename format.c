@@ -206,7 +206,7 @@ void format_other(Conf *conf)
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
 
-        if (conf->num_runs <= 30) { // Use t-value.
+        if (conf->num_runs < 30) { // Use t-value.
             z_t = tvals[conf->conf_level - 1][conf->num_runs - 1];
         }
         else { // num_runs over 30, use Z value.
