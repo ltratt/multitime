@@ -29,6 +29,7 @@
 #include <sys/time.h>
 
 #include "multitime.h"
+#include "tvals.h"
 #include "zvals.h"
 
 extern char* __progname;
@@ -200,17 +201,16 @@ void format_like_time(Conf *conf)
 
 void format_other(Conf *conf)
 {
-    double z_t = .0;
+    double z_t = .0; // Z or t-value used to calculate confidence interval.
     fprintf(stderr, "===> %s results\n", __progname);
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
 
         if (conf->num_runs <= 30) { // Use t-value.
-            fprintf(stderr, "Warning: confidence intervals may be inaccurate for num_runs < 30.\n");
-
+            z_t = tvals[conf->conf_level - 1][conf->num_runs - 1];
         }
         else { // num_runs over 30, use Z value.
-            z_t = zvals[conf->conf_level];
+            z_t = zvals[conf->conf_level - 1];
         }
 
         if (i > 0)
