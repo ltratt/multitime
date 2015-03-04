@@ -314,21 +314,21 @@ void format_other(Conf *conf)
 
         // Print everything out
 
-      fprintf(stderr, "real        %.3f+/-%-12.6f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+      fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_real,
           real_ci,
           sqrt(real_stddev / conf->num_runs),
           min_real,
           md_real,
           max_real);
-      fprintf(stderr, "user        %.3f+/-%-12.6f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+      fprintf(stderr, "user        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_user,
           user_ci,
           sqrt(user_stddev / conf->num_runs),
           min_user,
           md_user,
           max_user);
-      fprintf(stderr, "sys         %.3f+/-%-12.6f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+      fprintf(stderr, "sys         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_sys,
           sys_ci,
           sqrt(sys_stddev / conf->num_runs),
