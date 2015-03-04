@@ -640,11 +640,13 @@ int main(int argc, char** argv)
             }
             case 'c': {
                 char *ep = optarg + strlen(optarg);
-                int lval = (int)strtoimax(optarg, &ep, 10);
+                long lval = (int)strtoimax(optarg, &ep, 10);
+                if (optarg[0] == '\0' || *ep != '\0')
+                    usage(1, "'level' not a valid number.");
                 if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
                   || lval < 1 || lval > 99)
                     usage(1, "'level' out of range.");
-                conf->conf_level = lval;
+                conf->conf_level = (int) lval;
                 break;
             }
             case 'v':
