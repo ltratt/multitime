@@ -29,7 +29,7 @@
 #include <sys/time.h>
 
 #include "multitime.h"
-
+#include "zvals.h"
 
 extern char* __progname;
 
@@ -200,25 +200,17 @@ void format_like_time(Conf *conf)
 
 void format_other(Conf *conf)
 {
-    double z = .0;
+    double z_t = .0;
     fprintf(stderr, "===> %s results\n", __progname);
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
 
-        if (conf->num_runs < 30) {
+        if (conf->num_runs <= 30) { // Use t-value.
             fprintf(stderr, "Warning: confidence intervals may be inaccurate for num_runs < 30.\n");
+
         }
-        if (conf->conf_level == 90) {
-          fprintf(stderr, "Confidence level: 90%%.\n");
-          z = 1.645;
-        }
-        else if (conf->conf_level == 99) {
-         fprintf(stderr, "Confidence level: 99%%.\n");
-          z = 2.58;
-        }
-        else { // conf->conf_level must be 95.
-         fprintf(stderr, "Confidence level: 95%%.\n");
-          z = 1.96;
+        else { // num_runs over 30, use Z value.
+            z_t = zvals[conf->conf_level];
         }
 
         if (i > 0)
@@ -262,9 +254,9 @@ void format_other(Conf *conf)
         // Confidence intervals (without means)
 
         double real_ci = .0, user_ci = .0, sys_ci = .0;
-        real_ci = ((z * real_stddev) / sqrt(conf->num_runs));
-        user_ci = ((z * user_stddev) / sqrt(conf->num_runs));
-        sys_ci = ((z * sys_stddev) / sqrt(conf->num_runs));
+        real_ci = ((z_t * real_stddev) / sqrt(conf->num_runs));
+        user_ci = ((z_t * user_stddev) / sqrt(conf->num_runs));
+        sys_ci = ((z_t * sys_stddev) / sqrt(conf->num_runs));
 
         // Mins and maxes
 

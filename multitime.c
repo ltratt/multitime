@@ -485,12 +485,7 @@ void parse_batch(Conf *conf, char *path)
                 if (j + 1 == argc)
                     errx(1, "option requires an argument -- c at line %d", lineno);
                 confidence = atoi(argv[j + 1]);
-                if (confidence == 90 || confidence == 95 || confidence == 99) {
-                    conf->conf_level = confidence;
-                }
-                else {
-                    errx(1, "available confidence levels are 90, 95 and 99 -- c at line %d", lineno);
-                }
+                conf->conf_level = confidence;
                 free(argv[j]);
                 j += 2;
             }
@@ -561,7 +556,7 @@ void usage(int rtn_code, char *msg)
         fprintf(stderr, "%s\n", msg);
     fprintf(stderr, "Usage:\n  %s [-f <liketime|rusage>] [-I <replstr>] "
       "[-i <stdincmd>]\n    [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>] "
-      "[-c <90|95|99>] <command>\n    [<arg 1> ... <arg n>]\n"
+      "[-c <level>] <command>\n    [<arg 1> ... <arg n>]\n"
       "  %s -b <file> [-f <rusage>] [-q] [-s <sleep>] "
       "[-n <numruns>]\n", __progname, __progname);
     exit(rtn_code);
@@ -646,14 +641,10 @@ int main(int argc, char** argv)
             case 'c': {
                 char *ep = optarg + strlen(optarg);
                 int lval = (int)strtoimax(optarg, &ep, 10);
-                if (optarg[0] == 0 || *ep != 0)
-                    usage(1, "'num runs' not a valid number.");
-                if (lval == 90 || lval == 95 || lval == 99) {
-                    conf->conf_level = lval;
-                }
-                else {
-                    usage(1, "available confidence levels are 90, 95 and 99.");
-                }
+                if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
+                  || lval < 1 || lval > 99)
+                    usage(1, "'level' out of range.");
+                conf->conf_level = lval;
                 break;
             }
             case 'v':
