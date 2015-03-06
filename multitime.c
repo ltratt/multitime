@@ -546,11 +546,11 @@ void usage(int rtn_code, char *msg)
 {
     if (msg)
         fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "Usage:\n  %s [-f <liketime|rusage>] [-I <replstr>] "
-      "[-i <stdincmd>]\n    [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>] "
-      "[-c <level>] <command>\n    [<arg 1> ... <arg n>]\n"
-      "  %s -b <file> [-f <rusage>] [-q] [-s <sleep>] "
-      "[-n <numruns>]\n", __progname, __progname);
+    fprintf(stderr, "Usage:\n  %s [-c <level>] [-f <liketime|rusage>] [-I <replstr>]\n"
+      "    [-i <stdincmd>] [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>]\n"
+      "    <command> [<arg 1> ... <arg n>]\n"
+      "  %s -b <file> [-c <level>] [-f <rusage>] [-q] [-s <sleep>]\n"
+      "    [-n <numruns>]\n", __progname, __progname);
     exit(rtn_code);
 }
 
@@ -568,11 +568,22 @@ int main(int argc, char** argv)
     char *batch_file = NULL;
     char *pre_cmd = NULL, *input_cmd = NULL, *output_cmd = NULL, *replace_str = NULL;
     int ch;
-    while ((ch = getopt(argc, argv, "+b:f:hi:ln:I:o:pqr:s:c:v")) != -1) {
+    while ((ch = getopt(argc, argv, "+b:c:f:hi:ln:I:o:pqr:s:v")) != -1) {
         switch (ch) {
             case 'b':
                 batch_file = optarg;
                 break;
+            case 'c': {
+                char *ep = optarg + strlen(optarg);
+                long lval = (int)strtoimax(optarg, &ep, 10);
+                if (optarg[0] == '\0' || *ep != '\0')
+                    usage(1, "'level' not a valid number.");
+                if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
+                  || lval < 1 || lval > 99)
+                    usage(1, "'level' out of range.");
+                conf->conf_level = (int) lval;
+                break;
+            }
             case 'f':
                 if (strcmp(optarg, "liketime") == 0)
                     conf->format_style = FORMAT_LIKE_TIME;
@@ -628,17 +639,6 @@ int main(int argc, char** argv)
                   || lval < 0)
                     usage(1, "'sleep' out of range.");
                 conf->sleep = (int) lval;
-                break;
-            }
-            case 'c': {
-                char *ep = optarg + strlen(optarg);
-                long lval = (int)strtoimax(optarg, &ep, 10);
-                if (optarg[0] == '\0' || *ep != '\0')
-                    usage(1, "'level' not a valid number.");
-                if ((errno == ERANGE && (lval == INTMAX_MIN || lval == INTMAX_MAX))
-                  || lval < 1 || lval > 99)
-                    usage(1, "'level' out of range.");
-                conf->conf_level = (int) lval;
                 break;
             }
             case 'v':

@@ -25,6 +25,7 @@
 .Nd time command execution over multiple executions
 .Sh SYNOPSIS
 .Nm multitime
+.Op Fl c Ar level
 .Op Fl f Ar liketime | rusage
 .Op Fl I Ar replstr
 .Op Fl i Ar stdincmd
@@ -33,13 +34,13 @@
 .Op Fl q
 .Op Fl r Ar precmd
 .Op Fl s Ar sleep
-.Op Fl c Ar level
 .Op Fl v
 .Ar command
 .Op arg1, ..., argn
 .Pp
 .Nm multitime
 .Fl b Ar batchfile
+.Op Fl c Ar level
 .Op Fl f Ar liketime | rusage
 .Op Fl n Ar numruns
 .Op Fl s Ar sleep
@@ -91,6 +92,11 @@ Execute multiple commands from
 See the
 .Sx BATCHFILES
 section for more details.
+.It Ic -c Ar level
+Report mean times with confidence intervals.
+.Ar level
+is an integer between 0 and 100 (both exclusive) representing the desired
+confidence level.
 .It Ic -f Ar liketime | rusage
 If called as
 .Nm time ,
@@ -206,9 +212,6 @@ If not specified,
 defaults to 3 seconds; if set to 0,
 .Nm
 does not sleep at all between executions.
-.It Ic -c Ar level
-Controls the level of confidence in the reported confidence intervals.
-For example, a value of 90 will result in a 90% confidence interval being calculated.
 .It Ic -v
 Causes verbose output (e.g. which commands are being executed).
 .El
