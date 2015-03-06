@@ -65,6 +65,14 @@ AC_CHECK_FUNC(arc4random, [AC_DEFINE(MT_HAVE_ARC4RANDOM)])
 
 
 
+# arc4random
+
+AH_TEMPLATE(MT_HAVE_DRAND48,
+  [Define if your platform has the drand48 function family.])
+
+AC_CHECK_FUNC(drand48, [AC_DEFINE(MT_HAVE_DRAND48)])
+
+
 # random
 
 AH_TEMPLATE(MT_HAVE_RANDOM,

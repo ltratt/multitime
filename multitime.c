@@ -58,6 +58,8 @@ char escape_char(char);
 
 #if defined(MT_HAVE_ARC4RANDOM)
 #define RANDN(n) (arc4random() % n)
+#elif defined(MT_HAVE_DRAND48)
+#define RANDN(n) ((int) (drand48() * n))
 #elif defined(MT_HAVE_RANDOM)
 #define RANDN(n) (random() % n)
 #else
@@ -691,6 +693,11 @@ int main(int argc, char** argv)
 
 #   if defined(MT_HAVE_ARC4RANDOM)
     // arc4random doesn't need to be seeded
+#	elif defined(MT_HAVE_DRAND48)
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srand48(tv.tv_sec ^ tv.tv_usec);
 #	elif defined(MT_HAVE_RANDOM) && defined(MT_HAVE_SRANDOMDEV)
 	srandomdev();
 #	elif defined(MT_HAVE_RANDOM)
