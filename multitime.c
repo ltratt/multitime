@@ -451,7 +451,7 @@ void parse_batch(Conf *conf, char *path)
         cmd->timevals = malloc(sizeof(struct timeval *) * conf->num_runs);
         memset(cmd->rusages, 0, sizeof(struct rusage *) * conf->num_runs);
         memset(cmd->timevals, 0, sizeof(struct rusage *) * conf->num_runs);
-        int j = 0, confidence = 0;
+        int j = 0;
         while (j < argc) {
             if (strcmp(argv[j], "-I") == 0) {
                 if (j + 1 == argc)
@@ -480,14 +480,6 @@ void parse_batch(Conf *conf, char *path)
                 else
                     cmd->quiet_stdout = true;
                 j += 1;
-            }
-            else if (strcmp(argv[j], "-c") == 0) {
-                if (j + 1 == argc)
-                    errx(1, "option requires an argument -- c at line %d", lineno);
-                confidence = atoi(argv[j + 1]);
-                conf->conf_level = confidence;
-                free(argv[j]);
-                j += 2;
             }
             else if (strcmp(argv[j], "-r") == 0) {
                 if (j + 1 == argc)
