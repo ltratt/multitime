@@ -146,6 +146,13 @@ int cmp_rusage_stime(const void *x, const void *y)
 
 
 
+int cmp_double(const void *x, const void *y)
+{
+    return (*(double*)x - *(double*)y);
+}
+
+
+
 #define RUSAGE_CMP(n) int cmp_rusage_ ## n(const void *x, const void *y) \
     { \
         const long *l1 = &(*((const struct rusage **) x))->ru_ ## n; \
@@ -327,6 +334,19 @@ void format_other(Conf *conf)
             md_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[mdl]->ru_stime);
 
         double min_cpu = .0, max_cpu = .0, md_cpu = .0;
+        double cpu_times[conf->num_runs];
+        for (int j = 0; j < conf->num_runs; j += 1) {
+            cpu_times[j] = (TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime) +
+                            TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime));
+        }
+        qsort(cpu_times, conf->num_runs, sizeof(double), cmp_double);
+        min_cpu = cpu_times[0];
+        max_cpu = cpu_times[conf->num_runs - 1];
+        if (conf->num_runs % 2 == 0) {
+            md_cpu = (cpu_times[mdl] + cpu_times[mdr]) / 2.0;
+        }
+        else
+            md_cpu = cpu_times[mdl];
 
         // Print everything out
 
