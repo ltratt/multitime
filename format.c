@@ -179,15 +179,18 @@ void format_like_time(Conf *conf)
     // Formatting like /usr/bin/time only makes sense if a single command is run.
     assert(conf->num_cmds == 1);
 
-    struct timeval real, user, sys;
+    struct timeval real, user, sys, cpu;
     timerclear(&real);
     timerclear(&user);
     timerclear(&sys);
+    timerclear(&cpu);
     Cmd *cmd = conf->cmds[0];
     for (int i = 0; i < conf->num_runs; i += 1) {
         timeradd(&real, cmd->timevals[i],           &real);
         timeradd(&user, &cmd->rusages[0]->ru_utime, &user);
         timeradd(&sys,  &cmd->rusages[0]->ru_stime, &sys);
+        timeradd(&cpu,  &cmd->rusages[0]->ru_utime, &cpu);
+        timeradd(&cpu,  &cmd->rusages[0]->ru_stime, &cpu);
     }
 	fprintf(stderr, "real %9lld.%02lld\n",
       (long long) (real.tv_sec / conf->num_runs), (long long) ((real.tv_usec / 10000) / conf->num_runs));
@@ -195,6 +198,8 @@ void format_like_time(Conf *conf)
       (long long) (user.tv_sec / conf->num_runs), (long long) ((user.tv_usec / 10000) / conf->num_runs));
 	fprintf(stderr, "sys  %9lld.%02lld\n",
       (long long) (sys.tv_sec / conf->num_runs), (long long) ((sys.tv_usec / 10000) / conf->num_runs));
+  fprintf(stderr, "cpu  %9lld.%02lld\n",
+      (long long) (cpu.tv_sec / conf->num_runs), (long long) ((cpu.tv_usec / 10000) / conf->num_runs));
 }
 
 
@@ -223,14 +228,17 @@ void format_other(Conf *conf)
 
         // Means
 
-        struct timeval mean_real_tv, mean_user_tv, mean_sys_tv;
+        struct timeval mean_real_tv, mean_user_tv, mean_sys_tv, mean_cpu_tv;
         timerclear(&mean_real_tv);
         timerclear(&mean_user_tv);
         timerclear(&mean_sys_tv);
+        timerclear(&mean_cpu_tv);
         for (int j = 0; j < conf->num_runs; j += 1) {
             timeradd(&mean_real_tv, cmd->timevals[j],           &mean_real_tv);
             timeradd(&mean_user_tv, &cmd->rusages[j]->ru_utime, &mean_user_tv);
             timeradd(&mean_sys_tv,  &cmd->rusages[j]->ru_stime, &mean_sys_tv);
+            timeradd(&mean_cpu_tv,  &cmd->rusages[j]->ru_utime, &mean_cpu_tv);
+            timeradd(&mean_cpu_tv,  &cmd->rusages[j]->ru_stime, &mean_cpu_tv);
         }
         double mean_real = (double)
           TIMEVAL_TO_DOUBLE(&mean_real_tv) / conf->num_runs;
@@ -238,10 +246,12 @@ void format_other(Conf *conf)
           TIMEVAL_TO_DOUBLE(&mean_user_tv) / conf->num_runs;
         double mean_sys  = (double)
           TIMEVAL_TO_DOUBLE(&mean_sys_tv)  / conf->num_runs;
+        double mean_cpu  = (double)
+          TIMEVAL_TO_DOUBLE(&mean_cpu_tv)  / conf->num_runs;
 
         // Standard deviations
 
-        double real_stddev = 0, user_stddev = 0, sys_stddev = 0;
+        double real_stddev = 0, user_stddev = 0, sys_stddev = 0, cpu_stddev = 0;
         for (int j = 0; j < conf->num_runs; j += 1) {
             real_stddev   +=
               pow(TIMEVAL_TO_DOUBLE(cmd->timevals[j]) - mean_real, 2);
@@ -249,14 +259,18 @@ void format_other(Conf *conf)
               pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime) - mean_user, 2);
             sys_stddev    +=
               pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime) - mean_sys,  2);
+            cpu_stddev   +=
+              pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime) +
+                  TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime) - mean_cpu, 2);
         }
 
         // Confidence intervals (without means)
 
-        double real_ci = .0, user_ci = .0, sys_ci = .0;
+        double real_ci = .0, user_ci = .0, sys_ci = .0, cpu_ci = .0;
         real_ci = ((z_t * real_stddev) / sqrt(conf->num_runs));
         user_ci = ((z_t * user_stddev) / sqrt(conf->num_runs));
         sys_ci = ((z_t * sys_stddev) / sqrt(conf->num_runs));
+        cpu_ci = ((z_t * cpu_stddev) / sqrt(conf->num_runs));
 
         // Mins and maxes
 
@@ -312,6 +326,8 @@ void format_other(Conf *conf)
         else
             md_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[mdl]->ru_stime);
 
+        double min_cpu = .0, max_cpu = .0, md_cpu = .0;
+
         // Print everything out
 
       fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
@@ -321,6 +337,13 @@ void format_other(Conf *conf)
           min_real,
           md_real,
           max_real);
+      fprintf(stderr, "cpu         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+          mean_cpu,
+          cpu_ci,
+          sqrt(cpu_stddev / conf->num_runs),
+          min_cpu,
+          md_cpu,
+          max_cpu);
       fprintf(stderr, "user        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_user,
           user_ci,
