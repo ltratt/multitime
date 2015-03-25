@@ -25,7 +25,7 @@ install: multitime
 
 
 clean:
-	rm -f multitime extsmaild ${MULTITIME_OBJS}
+	rm -f multitime ${MULTITIME_OBJS}
 
 
 distclean: clean
