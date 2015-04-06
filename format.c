@@ -235,20 +235,20 @@ void format_other(Conf *conf)
 
         // Means
 
-        struct timeval mean_real_tv, mean_user_tv, mean_sys_tv, mean_cpu_tv;
-        timerclear(&mean_real_tv);
+        struct timeval mean_wall_tv, mean_user_tv, mean_sys_tv, mean_cpu_tv;
+        timerclear(&mean_wall_tv);
         timerclear(&mean_user_tv);
         timerclear(&mean_sys_tv);
         timerclear(&mean_cpu_tv);
         for (int j = 0; j < conf->num_runs; j += 1) {
-            timeradd(&mean_real_tv, cmd->timevals[j],           &mean_real_tv);
+            timeradd(&mean_wall_tv, cmd->timevals[j],           &mean_wall_tv);
             timeradd(&mean_user_tv, &cmd->rusages[j]->ru_utime, &mean_user_tv);
             timeradd(&mean_sys_tv,  &cmd->rusages[j]->ru_stime, &mean_sys_tv);
             timeradd(&mean_cpu_tv,  &cmd->rusages[j]->ru_utime, &mean_cpu_tv);
             timeradd(&mean_cpu_tv,  &cmd->rusages[j]->ru_stime, &mean_cpu_tv);
         }
-        double mean_real = (double)
-          TIMEVAL_TO_DOUBLE(&mean_real_tv) / conf->num_runs;
+        double mean_wall = (double)
+          TIMEVAL_TO_DOUBLE(&mean_wall_tv) / conf->num_runs;
         double mean_user = (double)
           TIMEVAL_TO_DOUBLE(&mean_user_tv) / conf->num_runs;
         double mean_sys  = (double)
@@ -258,10 +258,10 @@ void format_other(Conf *conf)
 
         // Standard deviations
 
-        double real_stddev = 0, user_stddev = 0, sys_stddev = 0, cpu_stddev = 0;
+        double wall_stddev = 0, user_stddev = 0, sys_stddev = 0, cpu_stddev = 0;
         for (int j = 0; j < conf->num_runs; j += 1) {
-            real_stddev   +=
-              pow(TIMEVAL_TO_DOUBLE(cmd->timevals[j]) - mean_real, 2);
+            wall_stddev   +=
+              pow(TIMEVAL_TO_DOUBLE(cmd->timevals[j]) - mean_wall, 2);
             user_stddev   +=
               pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime) - mean_user, 2);
             sys_stddev    +=
@@ -273,8 +273,8 @@ void format_other(Conf *conf)
 
         // Confidence intervals (without means)
 
-        double real_ci = .0, user_ci = .0, sys_ci = .0, cpu_ci = .0;
-        real_ci = ((z_t * real_stddev) / sqrt(conf->num_runs));
+        double wall_ci = .0, user_ci = .0, sys_ci = .0, cpu_ci = .0;
+        wall_ci = ((z_t * wall_stddev) / sqrt(conf->num_runs));
         user_ci = ((z_t * user_stddev) / sqrt(conf->num_runs));
         sys_ci = ((z_t * sys_stddev) / sqrt(conf->num_runs));
         cpu_ci = ((z_t * cpu_stddev) / sqrt(conf->num_runs));
@@ -291,18 +291,18 @@ void format_other(Conf *conf)
             mdr = 0; // Unused
         }
 
-        double min_real, max_real, md_real;
+        double min_wall, max_wall, md_wall;
         qsort(cmd->timevals, conf->num_runs, sizeof(struct timeval *),
           cmp_timeval);
-        min_real = TIMEVAL_TO_DOUBLE(cmd->timevals[0]);
-        max_real = TIMEVAL_TO_DOUBLE(cmd->timevals[conf->num_runs - 1]);
+        min_wall = TIMEVAL_TO_DOUBLE(cmd->timevals[0]);
+        max_wall = TIMEVAL_TO_DOUBLE(cmd->timevals[conf->num_runs - 1]);
         if (conf->num_runs % 2 == 0) {
             struct timeval t;
             timeradd(cmd->timevals[mdl], cmd->timevals[mdr], &t);
-            md_real = TIMEVAL_TO_DOUBLE(&t) / 2;
+            md_wall = TIMEVAL_TO_DOUBLE(&t) / 2;
         }
         else
-            md_real = TIMEVAL_TO_DOUBLE(cmd->timevals[mdl]);
+            md_wall = TIMEVAL_TO_DOUBLE(cmd->timevals[mdl]);
 
         double min_user, max_user, md_user;
         qsort(cmd->rusages, conf->num_runs,
@@ -350,13 +350,13 @@ void format_other(Conf *conf)
 
         // Print everything out
 
-      fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
-          mean_real,
-          real_ci,
-          sqrt(real_stddev / conf->num_runs),
-          min_real,
-          md_real,
-          max_real);
+      fprintf(stderr, "wall        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+          mean_wall,
+          wall_ci,
+          sqrt(wall_stddev / conf->num_runs),
+          min_wall,
+          md_wall,
+          max_wall);
       fprintf(stderr, "cpu         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_cpu,
           cpu_ci,
