@@ -146,7 +146,7 @@ int cmp_rusage_stime(const void *x, const void *y)
 
 
 
-int cmp_double(const void *x, const void *y)
+int cmp_cputime(const void *x, const void *y)
 {
     return (*(double*)x - *(double*)y);
 }
@@ -339,7 +339,7 @@ void format_other(Conf *conf)
             cpu_times[j] = (TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime) +
                             TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime));
         }
-        qsort(cpu_times, conf->num_runs, sizeof(double), cmp_double);
+        qsort(cpu_times, conf->num_runs, sizeof(double), cmp_cputime);
         min_cpu = cpu_times[0];
         max_cpu = cpu_times[conf->num_runs - 1];
         if (conf->num_runs % 2 == 0) {
