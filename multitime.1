@@ -279,10 +279,20 @@ will then produce output such as the following on stderr:
 .Dl { return n <= 1? 1: fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }'
 .Bl -column "NameX" "MeanXXX" "StdDevXXX" "MinXXXX" "MedianX" "MaxXXX" -offset indent
 .It       Ta  Mean Ta Ta  Std.Dev. Min    Ta  Median  Ta  Max
-.It real  Ta  0.474+/-0.000012  Ta    0.001         Ta  0.473  Ta  0.474   Ta  0.477
-.It user  Ta  0.456+/-0.000474  Ta    0.016         Ta  0.430  Ta  0.460   Ta  0.480
-.It sys   Ta  0.000+/-0.000002  Ta    0.000         Ta  0.000  Ta  0.000   Ta  0.010
+.It wall Ta  2.031+/-0.2579  Ta    0.169         Ta  1.929  Ta  1.951   Ta  2.369
+.It cpu  Ta  1.830+/-0.0002  Ta    0.005         Ta  1.825  Ta  1.823   Ta  1.831
+.It user Ta  1.818+/-0.0005  Ta    0.008         Ta  1.807  Ta  1.818   Ta  1.828
+.It sys   Ta  0.013+/-0.0003  Ta    0.006         Ta  0.008  Ta  0.012   Ta  0.024
 .El
+.Pp
+.Ar wall
+here is the wall clock time and 
+.Ar cpu
+is the 
+.Ar real
+and
+.Ar sys
+times added together (with correct standard deviation, etc.).
 .Pp
 As an example of more complex uses of
 .Nm ,
