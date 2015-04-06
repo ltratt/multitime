@@ -199,14 +199,14 @@ void format_like_time(Conf *conf)
         timeradd(&cpu,  &cmd->rusages[0]->ru_utime, &cpu);
         timeradd(&cpu,  &cmd->rusages[0]->ru_stime, &cpu);
     }
-	fprintf(stderr, "real %9lld.%02lld\n",
-      (long long) (real.tv_sec / conf->num_runs), (long long) ((real.tv_usec / 10000) / conf->num_runs));
-	fprintf(stderr, "user %9lld.%02lld\n",
-      (long long) (user.tv_sec / conf->num_runs), (long long) ((user.tv_usec / 10000) / conf->num_runs));
-	fprintf(stderr, "sys  %9lld.%02lld\n",
-      (long long) (sys.tv_sec / conf->num_runs), (long long) ((sys.tv_usec / 10000) / conf->num_runs));
-  fprintf(stderr, "cpu  %9lld.%02lld\n",
-      (long long) (cpu.tv_sec / conf->num_runs), (long long) ((cpu.tv_usec / 10000) / conf->num_runs));
+    fprintf(stderr, "real %9lld.%02lld\n",
+        (long long) (real.tv_sec / conf->num_runs), (long long) ((real.tv_usec / 10000) / conf->num_runs));
+    fprintf(stderr, "user %9lld.%02lld\n",
+        (long long) (user.tv_sec / conf->num_runs), (long long) ((user.tv_usec / 10000) / conf->num_runs));
+    fprintf(stderr, "sys  %9lld.%02lld\n",
+        (long long) (sys.tv_sec / conf->num_runs), (long long) ((sys.tv_usec / 10000) / conf->num_runs));
+    fprintf(stderr, "cpu  %9lld.%02lld\n",
+        (long long) (cpu.tv_sec / conf->num_runs), (long long) ((cpu.tv_usec / 10000) / conf->num_runs));
 }
 
 
