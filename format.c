@@ -29,8 +29,7 @@
 #include <sys/time.h>
 
 #include "multitime.h"
-#include "tvals.h"
-#include "zvals.h"
+#include "statistics.h"
 
 extern char* __progname;
 
@@ -109,17 +108,6 @@ void pp_arg(const char *s)
 //
 // These are needed for the various calls to quicksort in format_other
 //
-
-int cmp_timeval_as_double(const void *x, const void *y)
-{
-    double xx = *(double*)x, yy = *(double*)y;
-    if (xx < yy) return -1;
-    if (xx > yy) return  1;
-    return 0;
-}
-
-
-
 #define RUSAGE_CMP(n) int cmp_rusage_ ## n(const void *x, const void *y) \
     { \
         const long *l1 = &(*((const struct rusage **) x))->ru_ ## n; \
@@ -143,66 +131,6 @@ RUSAGE_CMP(nsignals)
 RUSAGE_CMP(nvcsw)
 RUSAGE_CMP(nivcsw)
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Statistical routines
-//
-double calculate_mean(double *values, int size)
-{
-    double mean = .0;
-    for (int j = 0; j < size; j++) {
-        mean += values[j];
-    }
-    mean /= (double)size;
-    return mean;
-}
-
-
-double calculate_std_dev(double *values, int size)
-{
-    double mean = calculate_mean(values, size);
-    double stddev = .0;
-    for (int j = 0; j < size; j += 1) {
-        stddev += pow(values[j] - mean, 2);
-    }
-    stddev = sqrt(stddev / size);
-    return stddev;
-}
-
-
-double calculate_ci(double *values, int size, int confidence)
-{
-    double z_t = .0;
-    if (size < 30) { // Use t-value.
-        z_t = tvals[confidence - 1][size - 1];
-    }
-    else { // num_runs over 30, use Z value.
-        z_t = zvals[confidence - 1];
-    }
-    double stddev = calculate_std_dev(values, size);
-    return ((z_t * stddev) / sqrt(size));
-}
-
-
-double calculate_median(double *values, int size)
-{
-    double median;
-    int mdl, mdr;
-    if (size % 2 == 0) {
-        mdl = size / 2 - 1; // Median left
-        mdr = size / 2;     // Median right
-    }
-    else {
-        mdl = size / 2;
-        mdr = 0; // Unused
-    }
-    if (size % 2 == 0) {
-        median = (values[mdl] + values[mdr]) / 2.0;
-    }
-    else
-        median = values[mdl];
-    return median;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////

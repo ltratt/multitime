@@ -7,7 +7,7 @@ bindir = @bindir@
 INSTALL = @INSTALL@
 
 
-MULTITIME_OBJS = format.o multitime.o
+MULTITIME_OBJS = statistics.o format.o multitime.o
 
 
 all: multitime
