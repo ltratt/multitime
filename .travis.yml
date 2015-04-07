@@ -1,0 +1,19 @@
+language: c
+
+compiler:
+    - gcc
+
+install:
+    - sudo apt-get -qqy update
+    - sudo apt-get -qqy install check valgrind
+
+script:
+    - make -f Makefile.bootstrap
+    - ./configure
+    - make
+    - cd tests
+    - make
+    - make test
+    - gcov ./test_stats
+    - cat test_stats.check.gcov
+    - valgrind --leak-check=full ./test_stats
