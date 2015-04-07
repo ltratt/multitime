@@ -110,38 +110,12 @@ void pp_arg(const char *s)
 // These are needed for the various calls to quicksort in format_other
 //
 
-int cmp_timeval(const void *x, const void *y)
+int cmp_timeval_as_double(const void *x, const void *y)
 {
-    const struct timeval *t1 = *((const struct timeval **) x);
-    const struct timeval *t2 = *((const struct timeval **) y);
-
-    if (t1->tv_sec < t2->tv_sec
-      || (t1->tv_sec == t2->tv_sec && t1->tv_usec < t2->tv_usec))
-        return -1;
-    else if (t1->tv_sec == t2->tv_sec && t1->tv_usec == t2->tv_usec)
-        return 0;
-    else
-        return 1;
-}
-
-
-
-int cmp_rusage_utime(const void *x, const void *y)
-{
-    const struct timeval *t1 = &(*((const struct rusage **) x))->ru_utime;
-    const struct timeval *t2 = &(*((const struct rusage **) y))->ru_utime;
-
-    return cmp_timeval(&t1, &t2);
-}
-
-
-
-int cmp_rusage_stime(const void *x, const void *y)
-{
-    const struct timeval *t1 = &(*((const struct rusage **) x))->ru_stime;
-    const struct timeval *t2 = &(*((const struct rusage **) y))->ru_stime;
-
-    return cmp_timeval(&t1, &t2);
+    double xx = *(double*)x, yy = *(double*)y;
+    if (xx < yy) return -1;
+    if (xx > yy) return  1;
+    return 0;
 }
 
 
@@ -168,6 +142,67 @@ RUSAGE_CMP(msgrcv)
 RUSAGE_CMP(nsignals)
 RUSAGE_CMP(nvcsw)
 RUSAGE_CMP(nivcsw)
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Statistical routines
+//
+double calculate_mean(double *values, int size)
+{
+    double mean = .0;
+    for (int j = 0; j < size; j++) {
+        mean += values[j];
+    }
+    mean /= (double)size;
+    return mean;
+}
+
+
+double calculate_std_dev(double *values, int size)
+{
+    double mean = calculate_mean(values, size);
+    double stddev = .0;
+    for (int j = 0; j < size; j += 1) {
+        stddev += pow(values[j] - mean, 2);
+    }
+    stddev = sqrt(stddev / size);
+    return stddev;
+}
+
+
+double calculate_ci(double *values, int size, int confidence)
+{
+    double z_t = .0;
+    if (size < 30) { // Use t-value.
+        z_t = tvals[confidence - 1][size - 1];
+    }
+    else { // num_runs over 30, use Z value.
+        z_t = zvals[confidence - 1];
+    }
+    double stddev = calculate_std_dev(values, size);
+    return ((z_t * stddev) / sqrt(size));
+}
+
+
+double calculate_median(double *values, int size)
+{
+    double median;
+    int mdl, mdr;
+    if (size % 2 == 0) {
+        mdl = size / 2 - 1; // Median left
+        mdr = size / 2;     // Median right
+    }
+    else {
+        mdl = size / 2;
+        mdr = 0; // Unused
+    }
+    if (size % 2 == 0) {
+        median = (values[mdl] + values[mdr]) / 2.0;
+    }
+    else
+        median = values[mdl];
+    return median;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,17 +236,9 @@ void format_like_time(Conf *conf)
 
 void format_other(Conf *conf)
 {
-    double z_t = .0; // Z or t-value used to calculate confidence interval.
     fprintf(stderr, "===> %s results\n", __progname);
     for (int i = 0; i < conf->num_cmds; i += 1) {
         Cmd *cmd = conf->cmds[i];
-
-        if (conf->num_runs < 30) { // Use t-value.
-            z_t = tvals[conf->conf_level - 1][conf->num_runs - 1];
-        }
-        else { // num_runs over 30, use Z value.
-            z_t = zvals[conf->conf_level - 1];
-        }
 
         if (i > 0)
             fprintf(stderr, "\n");
@@ -221,45 +248,75 @@ void format_other(Conf *conf)
         fprintf(stderr,
           "            Mean                Std.Dev.    Min         Median      Max\n");
 
-        // Means
-
-        struct timeval mean_real_tv, mean_user_tv, mean_sys_tv;
-        timerclear(&mean_real_tv);
-        timerclear(&mean_user_tv);
-        timerclear(&mean_sys_tv);
+        // Convert elapsed times for each run to a sorted array of doubles.
+        double real_times[conf->num_runs];
+        double user_times[conf->num_runs];
+        double sys_times[conf->num_runs];
         for (int j = 0; j < conf->num_runs; j += 1) {
-            timeradd(&mean_real_tv, cmd->timevals[j],           &mean_real_tv);
-            timeradd(&mean_user_tv, &cmd->rusages[j]->ru_utime, &mean_user_tv);
-            timeradd(&mean_sys_tv,  &cmd->rusages[j]->ru_stime, &mean_sys_tv);
+            real_times[j] = TIMEVAL_TO_DOUBLE(cmd->timevals[j]);
+            user_times[j] = TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime);
+            sys_times[j]  = TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime);
         }
-        double mean_real = (double)
-          TIMEVAL_TO_DOUBLE(&mean_real_tv) / conf->num_runs;
-        double mean_user = (double)
-          TIMEVAL_TO_DOUBLE(&mean_user_tv) / conf->num_runs;
-        double mean_sys  = (double)
-          TIMEVAL_TO_DOUBLE(&mean_sys_tv)  / conf->num_runs;
+        qsort(real_times, conf->num_runs, sizeof(double), cmp_timeval_as_double);
+        qsort(user_times, conf->num_runs, sizeof(double), cmp_timeval_as_double);
+        qsort(sys_times,  conf->num_runs, sizeof(double), cmp_timeval_as_double);
+
+        // Means
+        double mean_real = calculate_mean(real_times, conf->num_runs);
+        double mean_user = calculate_mean(user_times, conf->num_runs);
+        double mean_sys  = calculate_mean(sys_times, conf->num_runs);
 
         // Standard deviations
-
-        double real_stddev = 0, user_stddev = 0, sys_stddev = 0;
-        for (int j = 0; j < conf->num_runs; j += 1) {
-            real_stddev   +=
-              pow(TIMEVAL_TO_DOUBLE(cmd->timevals[j]) - mean_real, 2);
-            user_stddev   +=
-              pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_utime) - mean_user, 2);
-            sys_stddev    +=
-              pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime) - mean_sys,  2);
-        }
+        double stddev_real = calculate_std_dev(real_times, conf->num_runs);
+        double stddev_user = calculate_std_dev(user_times, conf->num_runs);
+        double stddev_sys  = calculate_std_dev(sys_times, conf->num_runs);
 
         // Confidence intervals (without means)
+        double ci_real = calculate_ci(real_times, conf->num_runs, conf->conf_level);
+        double ci_user = calculate_ci(user_times, conf->num_runs, conf->conf_level);
+        double ci_sys  = calculate_ci(sys_times, conf->num_runs, conf->conf_level);
 
-        double real_ci = .0, user_ci = .0, sys_ci = .0;
-        real_ci = ((z_t * real_stddev) / sqrt(conf->num_runs));
-        user_ci = ((z_t * user_stddev) / sqrt(conf->num_runs));
-        sys_ci = ((z_t * sys_stddev) / sqrt(conf->num_runs));
+        // Minimums, maximums and medians.
+        double min_real = real_times[0];
+        double max_real = real_times[conf->num_runs - 1];
+        double md_real = calculate_median(real_times, conf->num_runs);
 
-        // Mins and maxes
+        double min_user = user_times[0];
+        double max_user = user_times[conf->num_runs - 1];
+        double md_user = calculate_median(user_times, conf->num_runs);;
 
+        double min_sys = sys_times[0];
+        double max_sys = sys_times[conf->num_runs - 1];
+        double md_sys = calculate_median(sys_times, conf->num_runs);;
+
+        // Print everything out
+        fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+            mean_real,
+            ci_real,
+            stddev_real,
+            min_real,
+            md_real,
+            max_real);
+        fprintf(stderr, "user        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+            mean_user,
+            ci_user,
+            stddev_user,
+            min_user,
+            md_user,
+            max_user);
+        fprintf(stderr, "sys         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
+            mean_sys,
+            ci_sys,
+            stddev_sys,
+            min_sys,
+            md_sys,
+            max_sys);
+        if (conf->format_style == FORMAT_NORMAL)
+            continue;
+
+        //
+        // rusage output.
+        //
         int mdl, mdr;
         if (conf->num_runs % 2 == 0) {
             mdl = conf->num_runs / 2 - 1; // Median left
@@ -269,78 +326,6 @@ void format_other(Conf *conf)
             mdl = conf->num_runs / 2;
             mdr = 0; // Unused
         }
-
-        double min_real, max_real, md_real;
-        qsort(cmd->timevals, conf->num_runs, sizeof(struct timeval *),
-          cmp_timeval);
-        min_real = TIMEVAL_TO_DOUBLE(cmd->timevals[0]);
-        max_real = TIMEVAL_TO_DOUBLE(cmd->timevals[conf->num_runs - 1]);
-        if (conf->num_runs % 2 == 0) {
-            struct timeval t;
-            timeradd(cmd->timevals[mdl], cmd->timevals[mdr], &t);
-            md_real = TIMEVAL_TO_DOUBLE(&t) / 2;
-        }
-        else
-            md_real = TIMEVAL_TO_DOUBLE(cmd->timevals[mdl]);
-
-        double min_user, max_user, md_user;
-        qsort(cmd->rusages, conf->num_runs,
-          sizeof(struct rusage *), cmp_rusage_utime);
-        min_user = TIMEVAL_TO_DOUBLE(&cmd->rusages[0]->ru_utime);
-        max_user = TIMEVAL_TO_DOUBLE(
-          &cmd->rusages[conf->num_runs - 1]->ru_utime);
-        if (conf->num_runs % 2 == 0) {
-            struct timeval t;
-            timeradd(&cmd->rusages[mdl]->ru_utime,
-              &cmd->rusages[mdr]->ru_utime, &t);
-            md_user = TIMEVAL_TO_DOUBLE(&t) / 2;
-        }
-        else
-            md_user = TIMEVAL_TO_DOUBLE(&cmd->rusages[mdl]->ru_utime);
-
-        double min_sys, max_sys, md_sys;
-        qsort(cmd->rusages,  conf->num_runs,
-          sizeof(struct rusage *), cmp_rusage_stime);
-        min_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[0]->ru_stime);
-        max_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[conf->num_runs - 1]->ru_stime);
-        if (conf->num_runs % 2 == 0) {
-            struct timeval t;
-            timeradd(&cmd->rusages[mdl]->ru_stime,
-              &cmd->rusages[mdr]->ru_stime, &t);
-            md_sys = TIMEVAL_TO_DOUBLE(&t) / 2;
-        }
-        else
-            md_sys = TIMEVAL_TO_DOUBLE(&cmd->rusages[mdl]->ru_stime);
-
-        // Print everything out
-
-      fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
-          mean_real,
-          real_ci,
-          sqrt(real_stddev / conf->num_runs),
-          min_real,
-          md_real,
-          max_real);
-      fprintf(stderr, "user        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
-          mean_user,
-          user_ci,
-          sqrt(user_stddev / conf->num_runs),
-          min_user,
-          md_user,
-          max_user);
-      fprintf(stderr, "sys         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
-          mean_sys,
-          sys_ci,
-          sqrt(sys_stddev / conf->num_runs),
-          min_sys,
-          md_sys,
-          max_sys);
-        if (conf->format_style == FORMAT_NORMAL)
-            continue;
-
-        //
-        // rusage output.
-        //
 
 #       define RUSAGE_STAT(n) \
           long sum_##n = 0; \
