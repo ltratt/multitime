@@ -5,7 +5,17 @@ compiler:
 
 install:
     - sudo apt-get -qqy update
-    - sudo apt-get -qqy install check valgrind
+    - sudo apt-get -qqy install valgrind wget
+    - mkdir $HOME/checksrc
+    - cd $HOME/checksrc
+    - wget http://downloads.sourceforge.net/project/check/check/0.9.14/check-0.9.14.tar.gz
+    - tar -xvzf check-0.9.14.tar.gz
+    - cd check-0.9.14
+    - ./configure --prefix=$HOME/checksrc
+    - make
+    - make install
+    - export PATH=$PATH:$HOME/checksrc/bin
+    - cd $TRAVIS_BUILD_DIR
 
 script:
     - make -f Makefile.bootstrap
@@ -13,7 +23,7 @@ script:
     - make
     - cd tests
     - make
-    - make test
-    - gcov ./test_stats
+    - LD_LIBRARY_PATH=$HOME/checksrc/lib make test
+    - LD_LIBRARY_PATH=$HOME/checksrc/lib gcov ./test_stats
     - cat test_stats.check.gcov
-    - valgrind --leak-check=full ./test_stats
+    - LD_LIBRARY_PATH=$HOME/checksrc/lib valgrind --leak-check=full ./test_stats
