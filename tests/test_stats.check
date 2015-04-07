@@ -1,0 +1,2 @@
+#test dummytest
+    ck_assert(1);
