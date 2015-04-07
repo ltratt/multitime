@@ -13,8 +13,8 @@ all: test_stats
 test: test_stats
 	./test_stats
 
-test_stats: test_stats.c
-	$(CC) $(CFLAGS) -o test_stats test_stats.c $(LIBS)
+test_stats: test_stats.c ../statistics.o
+	$(CC) $(CFLAGS) -o test_stats ../statistics.o test_stats.c $(LIBS)
 
 test_stats.c: test_stats.check
 	checkmk test_stats.check > test_stats.c

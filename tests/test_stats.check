@@ -1,2 +1,8 @@
-#test dummytest
-    ck_assert(1);
+#include "../statistics.h"
+
+#test cmp_test
+    double zero = 0.0;
+    double one = 1.0;
+    fail_unless(cmp_timeval_as_double(&zero, &zero) == 0);
+    fail_unless(cmp_timeval_as_double(&one, &zero) == 1);
+    fail_unless(cmp_timeval_as_double(&zero, &one) == -1);
