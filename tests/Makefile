@@ -2,10 +2,6 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O0 -fprofile-arcs -ftest-coverage
 LIBS = -lcheck -lm -lpthread -lrt
 
-ifdef TRAVIS
-CFLAGS += -L$(HOME)/checksrc/lib -I$(HOME)/checksrc/include
-endif
-
 .PHONY: all clean
 
 all: test_stats

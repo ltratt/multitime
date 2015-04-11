@@ -5,12 +5,12 @@ compiler:
 
 install:
     - sudo apt-get -qqy update
-    - sudo apt-get -qqy install valgrind wget
+    - sudo apt-get -qqy install check valgrind wget
     - mkdir $HOME/checksrc
     - cd $HOME/checksrc
-    - wget http://downloads.sourceforge.net/project/check/check/0.9.14/check-0.9.14.tar.gz
-    - tar -xvzf check-0.9.14.tar.gz
-    - cd check-0.9.14
+    - wget http://micah.cowan.name/projects/checkmk/checkmk-1.0.0pre4.tar.gz
+    - tar -xvzf checkmk-1.0.0pre4.tar.gz
+    - cd checkmk-1.0.0pre4/
     - ./configure --prefix=$HOME/checksrc
     - make
     - make install
@@ -23,7 +23,7 @@ script:
     - make
     - cd tests
     - make
-    - LD_LIBRARY_PATH=$HOME/checksrc/lib make test
-    - LD_LIBRARY_PATH=$HOME/checksrc/lib gcov ./test_stats
+    - make test
+    - gcov ./test_stats
     - cat test_stats.check.gcov
-    - LD_LIBRARY_PATH=$HOME/checksrc/lib valgrind --leak-check=full ./test_stats
+    - valgrind --leak-check=full ./test_stats
