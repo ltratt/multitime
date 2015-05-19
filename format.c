@@ -250,6 +250,10 @@ void format_other(Conf *conf)
             sys_stddev    +=
               pow(TIMEVAL_TO_DOUBLE(&cmd->rusages[j]->ru_stime) - mean_sys,  2);
         }
+        real_stddev = sqrt(real_stddev / conf->num_runs);
+        user_stddev = sqrt(user_stddev / conf->num_runs);
+        sys_stddev  = sqrt(sys_stddev / conf->num_runs);
+
 
         // Confidence intervals (without means)
 
@@ -317,21 +321,21 @@ void format_other(Conf *conf)
       fprintf(stderr, "real        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_real,
           real_ci,
-          sqrt(real_stddev / conf->num_runs),
+          real_stddev,
           min_real,
           md_real,
           max_real);
       fprintf(stderr, "user        %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_user,
           user_ci,
-          sqrt(user_stddev / conf->num_runs),
+          user_stddev,
           min_user,
           md_user,
           max_user);
       fprintf(stderr, "sys         %.3f+/-%-12.4f%-12.3f%-12.3f%-12.3f%-12.3f\n",
           mean_sys,
           sys_ci,
-          sqrt(sys_stddev / conf->num_runs),
+          sys_stddev,
           min_sys,
           md_sys,
           max_sys);
