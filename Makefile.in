@@ -26,11 +26,13 @@ install: multitime
 
 clean:
 	rm -f multitime ${MULTITIME_OBJS}
+	cd tests && ${MAKE} ${MFLAGS} clean
 
 
 distclean: clean
 	rm -rf configure Makefile Config.h Config.h.in autom4te.cache config.log \
 	  config.status
+	cd tests && ${MAKE} ${MFLAGS} distclean
 
 
 distrib:
@@ -39,3 +41,7 @@ distrib:
 	@read v?'multitime version: '; mkdir multitime-$$v; \
       cp `ls | grep -E -v "(autom4te.cache)|(Makefile.bootstrap)|(multitime-$$v)"` multitime-$$v; \
       tar cfz multitime-$$v.tar.gz multitime-$$v; rm -rf multitime-$$v
+
+
+test:
+	cd tests && ${MAKE} ${MFLAGS}

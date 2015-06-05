@@ -95,5 +95,5 @@ AC_CHECK_FUNC(srandomdev, [AC_DEFINE(MT_HAVE_SRANDOMDEV)])
 #
 
 CFLAGS=$real_cflags
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile tests/Makefile])
 AC_OUTPUT
