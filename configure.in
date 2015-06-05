@@ -39,6 +39,10 @@ AC_GNU_SOURCE
 #
 
 real_cflags="$CFLAGS -Wall"
+if test "$ac_cv_prog_cc_c99" != "no"
+then
+    real_cflags="$real_cflags $ac_cv_prog_cc_c99"
+fi
 LIBS="-lm"
 
 
