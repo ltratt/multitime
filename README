@@ -1,20 +1,61 @@
-================================================================================
-  multitime
-================================================================================
+multitime: a better time utility
+================================
 
-Unix's 'time' utility is a simple and often effective way of measuring how
-long a command takes to run. Unfortunately, running a command once can give
-misleading timings: the process may create a cache on its first execution,
-running faster subsequently; other processes may cause the command to be
-starved of CPU or IO time; etc. It is common to see people run 'time' several
-times and take whichever values they feel most comfortable with. Inevitably,
-this causes problems.
+Unix's `time` utility is a simple and often effective way of measuring how long a command takes to run. Unfortunately, running a command once can give misleading timings: the process may create a cache on its first execution, running faster subsequently; other processes may cause the command to be starved of CPU or IO time; etc. It is common to see people run `time` several times and take whichever values they feel most comfortable with. Inevitably, this causes problems.
 
-multitime is, in essence, a simple extension to time which runs a command
-multiple times and prints the timing means, standard deviations, mins,
-medians, and maxes having done so. This can give a much better understanding
-of the command's performance.
+`multitime` is, in essence, a simple extension to time which runs a command multiple times and prints the timing means (with confidence intervals), standard deviations, minimums, medians, and maximums having done so. This can give a much better understanding of the command's performance.
 
-More details at:
 
-  http://tratt.net/laurie/src/multitime/
+Why should you use multitime?
+-----------------------------
+
+If you want to do any of the following, then `multitime` is worth considering:
+
+* You want to run a command several times to understand how its timings naturally vary.
+* You want to run a command several times so that temporary blips in system activity do not distort the timings.
+* You need different executions of a command being timed to have different inputs / outputs.
+* You want to compare the timing of multiple commands (e.g. for benchmarking purposes).
+
+`multitime` can also be used as a drop-in replacement for the POSiX time command: when invoked as time (e.g. via a symlink), `multitime` behaves as `time`. For most users, therefore, `multitime` can safely replace the time binary, even if you don't make use of its advanced features.
+
+
+Example usage
+--------------
+
+The example below shows a simple benchmark of an `awk` program. In this case the program has been executed 5 times (`-n 5`) and the mean is reported at a 95% confidence level (`-c 99`).
+
+    $ multitime -n 5 -c 99 awk "function fib(n) \
+    >   { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }"
+    ===> multitime results
+    1: awk "function fib(n)   { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }"
+                Mean                Std.Dev.    Min         Median      Max
+    real        1.860+/-0.0013      0.021       1.837       1.856       1.895
+    user        1.833+/-0.0005      0.013       1.812       1.836       1.846
+    sys         0.002+/-0.0000      0.003       0.000       0.000       0.008
+
+
+Installing
+----------
+
+Formal released of `multitime` can be downloaded here: http://tratt.net/laurie/src/multitime/releases.html.
+
+Formal releases can be built and installed with:
+
+    $ ./configure
+    $ make install
+
+The latest source can be cloned with:
+
+    $ git clone git://github.com/ltratt/multitime.git
+
+and built with:
+
+    make -f Makefile.bootstrap
+    $ ./configure
+    $ make install
+
+
+Want to know more?
+------------------
+
+More details can be found at the http://tratt.net/laurie/src/multitime/
