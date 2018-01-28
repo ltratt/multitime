@@ -1,6 +1,6 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
-LIBS=@LIBS@
+LDLIBS=@LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
@@ -14,7 +14,6 @@ all: multitime
 
 
 multitime: ${MULTITIME_OBJS}
-	${CC} -o multitime ${MULTITIME_OBJS} ${LIBS}
 
 
 install: multitime
