@@ -2,6 +2,13 @@
   multitime history
 ============================================================================
 
+  multitime 1.4 (2018-02-02)
+
+* Minor build fixes.
+
+* -qq suppresses stdout and stderr (-q only suppresses stdout).
+
+
   multitime 1.3 (2014-02-22)
 
 * Minor bug fixes (including one memory leak).
