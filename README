@@ -55,6 +55,19 @@ and built with:
     $ make install
 
 
+Building RPMs
+-------------
+
+Requires docker and docker-compose.
+
+    $ cd rpm
+    $ docker-compose run -e IDS=$(id -u):$(id -g) rpm
+
+Rpms and source rpms will appear in the `rpm/RPMS` and `rpm/SRPMS` directory
+
+To build an rpm using your locally checked out version of multitime instead of
+a freshly downloaded version
+
 Want to know more?
 ------------------
 

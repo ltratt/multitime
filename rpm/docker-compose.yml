@@ -1,0 +1,11 @@
+version: "2.1"
+
+services:
+  rpm:
+    image: multitime
+    build:
+      context: .
+    volumes:
+      - ..:/src
+    environment:
+      - IDS=${IDS-1000:1000}
