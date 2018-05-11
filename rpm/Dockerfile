@@ -23,4 +23,4 @@ CMD set -eu; \
     spectool -g -R /src/rpm/SPECS/multitime.spec; \
     rpmbuild -ba /src/rpm/SPECS/multitime.spec; \
     chown -R ${IDS-1000:1000} /root/rpmbuild/RPMS /root/rpmbuild/SRPMS; \
-    mv /root/rpmbuild/RPMS /root/rpmbuild/SRPMS /src/rpm/
+    cp -ra /root/rpmbuild/RPMS /root/rpmbuild/SRPMS /src/rpm/
