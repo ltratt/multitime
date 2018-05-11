@@ -13,7 +13,7 @@ RUN dnf install -y automake gcc;\
 RUN mkdir -p /root/rpmbuild/SOURCES
 
 CMD set -eu; \
-    yum-builddep ${LOCAL_BUILD+-Dlocal_build=1} -y /src/rpm/SPECS/multitime.spec; \
+    yum-builddep ${LOCAL_BUILD+-D "local_build 1"} -y /src/rpm/SPECS/multitime.spec; \
     if [ "${LOCAL_BUILD-0}" != "0" ]; then \
       if [ -e "/src/rpm/SOURCES/multitime.tar.gz" ]; then \
         ln -s /src/rpm/SOURCES/multitime.tar.gz /root/rpmbuild/SOURCES/; \
