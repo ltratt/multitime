@@ -6,8 +6,11 @@ Summary:        Time command execution over multiple executions
 Group:          Utility
 License:        MIT
 URL:            http://tratt.net/laurie/src/multitime/
+%if 0%{?local_build:1}
+Source0:        %{name}.tar.gz
+%else
 Source0:        https://github.com/ltratt/%{name}/archive/%{name}-%{version}/%{name}-%{version}.tar.gz
-# Source0:        %%{name}.tar.gz
+%endif
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  automake gcc
@@ -19,12 +22,16 @@ standard deviations, minimums, medians, and maximums having done so. This can
 give a much better understanding of the command's performance
 
 %prep
+%if 0%{?local_build:1}
+%setup -q -n %{name}
+%else
              # This is what happens when you put the project name in the TAG! :(
 %setup -q -n %{name}-%{name}-%{version}
-make -f Makefile.bootstrap
+%endif
 
 %build
-./configure --prefix=/usr
+make -f Makefile.bootstrap
+CFLAGS=-g LDFLAGS=-g ./configure --prefix=/usr
 make -j $(nproc)
 
 %install

@@ -65,6 +65,9 @@ Requires docker and docker-compose.
 
 Rpms and source rpms will appear in the `rpm/RPMS` and `rpm/SRPMS` directory
 
+To build an rpm using your locally checked out version of multitime instead of
+a freshly downloaded version
+
 Want to know more?
 ------------------
 
