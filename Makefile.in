@@ -5,6 +5,7 @@ LIBS=@LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+mandir = @mandir@
 INSTALL = @INSTALL@
 
 
@@ -21,8 +22,8 @@ multitime: ${MULTITIME_OBJS}
 install: multitime
 	install -d ${DESTDIR}${bindir}
 	install -c -m 555 multitime ${DESTDIR}${bindir}
-	install -d ${DESTDIR}${prefix}/man/man1
-	install -c -m 444 multitime.1 ${DESTDIR}${prefix}/man/man1/multitime.1
+	install -d ${DESTDIR}${mandir}/man1
+	install -c -m 444 multitime.1 ${DESTDIR}${mandir}/man1/multitime.1
 
 
 clean:
