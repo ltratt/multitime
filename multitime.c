@@ -565,6 +565,7 @@ int main(int argc, char** argv)
     conf->format_style = FORMAT_UNKNOWN;
     conf->sleep = 3;
     conf->verbosity = 0;
+    conf->conf_level = 99;
 
     bool quiet_stdout = false, quiet_stderr = false;
     char *batch_file = NULL;
