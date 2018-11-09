@@ -551,7 +551,7 @@ void usage(int rtn_code, char *msg)
     fprintf(stderr, "Usage:\n  %s [-c <level>] [-f <liketime|rusage>] [-I <replstr>]\n"
       "    [-i <stdincmd>] [-n <numruns> [-o <stdoutcmd>] [-q] [-s <sleep>]\n"
       "    <command> [<arg 1> ... <arg n>]\n"
-      "  %s -b <file> [-c <level>] [-f <rusage>] [-q] [-s <sleep>]\n"
+      "  %s -b <file> [-c <level>] [-f <rusage>] [-s <sleep>]\n"
       "    [-n <numruns>]\n", __progname, __progname);
     exit(rtn_code);
 }
