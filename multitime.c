@@ -103,6 +103,7 @@ void execute_cmd(Conf *conf, Cmd *cmd, int runi)
             outtmpf = fdopen(outtmpfd, "r+");
         if (outtmpfd == -1 || outtmpf == NULL)
             errx(1, "Can't create temporary file.");
+	unlink(outtmpp);
     }
 
     struct rusage *ru = cmd->rusages[runi] =
@@ -193,6 +194,7 @@ FILE *read_input(Conf *conf, Cmd *cmd, int runi)
         goto cmd_err;
     free(input_cmd);
     fseek(tmpf, 0, SEEK_SET);
+    unlink(tmpp);
 
     return tmpf;
 
