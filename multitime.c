@@ -57,7 +57,7 @@ char *replace(Conf *, Cmd *, const char *, int);
 char escape_char(char);
 
 #if defined(MT_HAVE_ARC4RANDOM)
-#define RANDN(n) (arc4random() % n)
+#define RANDN(n) (arc4random_uniform(n))
 #elif defined(MT_HAVE_DRAND48)
 #define RANDN(n) ((int) (drand48() * n))
 #elif defined(MT_HAVE_RANDOM)
@@ -65,8 +65,6 @@ char escape_char(char);
 #else
 #define RANDN(n) (rand() % n)
 #endif
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Running commands
