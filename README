@@ -22,9 +22,9 @@ If you want to do any of the following, then `multitime` is worth considering:
 Example usage
 --------------
 
-The example below shows a simple benchmark of an `awk` program. In this case the program has been executed 5 times (`-n 5`) and the mean is reported at a 95% confidence level (`-c 99`).
+The example below shows a simple benchmark of an `awk` program. In this case the program has been executed 5 times (`-n 5`).
 
-    $ multitime -n 5 -c 99 awk "function fib(n) \
+    $ multitime -n 5 awk "function fib(n) \
     >   { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }"
     ===> multitime results
     1: awk "function fib(n)   { return n <= 1 ? 1 : fib(n - 1) + fib(n - 2) } BEGIN { fib(30) }"
