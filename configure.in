@@ -52,7 +52,7 @@ esac
 # timerclear and friends
 
 case `uname -s` in
-  Linux* ) real_cflags="$real_cflags -D_BSD_SOURCE";;
+  Linux* ) real_cflags="$real_cflags -D_DEFAULT_SOURCE";;
 esac
 
 
