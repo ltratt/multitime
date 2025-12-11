@@ -19,19 +19,18 @@
 # IN THE SOFTWARE.
 
 
-AC_INIT([multitime], MULTITIME_VERSION)
+AC_INIT([multitime],[MULTITIME_VERSION])
 
 ####################################################################################################
 # Generic initialization
 #
 
-AC_CONFIG_HEADER(Config.h)
+AC_CONFIG_HEADERS([Config.h])
 
 AC_LANG(C)
 
 AC_PROG_CC
-AC_PROG_CC_C99
-AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
 
 
 ####################################################################################################
